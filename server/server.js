@@ -32,7 +32,12 @@ mongoose.connect(process.env.MONGO_URI)
     console.error(err.message);
   });
 
-// Start the server
+// Test
+app.get("/", (req, res) => {
+  res.send("🎉 MarkMySeat API is live!");
+});
+
+  // Start the server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
