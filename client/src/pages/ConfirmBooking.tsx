@@ -40,7 +40,7 @@ const ConfirmBooking: React.FC = () => {
 
     try {
       // Step 1: Create order from backend
-      const res = await axios.post("http://16.170.206.48:8080/api/payment/create-order", {
+      const res = await axios.post("http://51.21.27.2:8080/api/payment/create-order", {
   amount: totalAmount,
   currency: "INR",
 });

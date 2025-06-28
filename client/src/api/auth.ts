@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://16.170.206.48:8080/api', // 💡 Use full IP here
+  baseURL: 'http://51.21.27.2:8080/api', // ✅ Updated Elastic IP
   withCredentials: true,
 });
 
