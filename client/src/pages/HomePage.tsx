@@ -16,8 +16,11 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const data = await getMovies();
-        setMovies(data);
+        const response = await getMovies();
+        console.log("Fetched movies:", response);
+
+        const movieList = Array.isArray(response) ? response : response.movies;
+        setMovies(movieList || []);
       } catch (error) {
         console.error("Failed to fetch movies:", error);
       }
@@ -66,7 +69,7 @@ const HomePage: React.FC = () => {
             onClick={() => navigate(`/book/${movie._id}`)}
           >
             <img
-              src={"/fallback.jpg"}
+              src={movie.poster || "/fallback.jpg"}
               alt={movie.title}
               onError={(e) => (e.currentTarget.src = "/fallback.jpg")}
               className="w-full h-72 object-cover rounded-lg shadow-md hover:scale-105 transition-transform duration-300"
