@@ -150,13 +150,6 @@ npm run dev
 
 ---
 
-## 📸 Screenshots
-
-> Add your own screenshots here after hosting
-> Example: homepage, seat selection, payment screen, booking confirmation
-
----
-
 ## 🧠 Future Enhancements
 
 * 🛠️ Admin Panel for adding shows/movies/seats
