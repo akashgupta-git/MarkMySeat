@@ -1,7 +1,6 @@
 # Node modules & build artifacts
 node_modules/
-dist/
-build/
+
 
 # Environment variables
 .env
