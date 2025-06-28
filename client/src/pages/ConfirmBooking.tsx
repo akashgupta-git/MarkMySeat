@@ -20,14 +20,21 @@ const ConfirmBooking: React.FC = () => {
   const [message, setMessage] = useState("");
 
   const state = location.state as BookingState | null;
-  const totalAmount = state ? 250 * state.ticketCount : 0;
+
+  const ticketCount = state?.ticketCount ?? state?.seatNumbers?.length ?? 0;
+  const ticketPrice = 250;
+  const totalAmount = ticketCount * ticketPrice;
 
   useEffect(() => {
     if (!state) navigate("/");
   }, [state, navigate]);
 
   const handlePayment = async () => {
-    if (!state) return;
+    if (!state || ticketCount <= 0 || totalAmount <= 0) {
+      setMessage("❌ Invalid ticket count or total amount.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -105,8 +112,8 @@ const ConfirmBooking: React.FC = () => {
         <p><strong>Movie:</strong> {state.movieTitle}</p>
         <p><strong>Seats:</strong> {state.seatNumbers.join(", ")}</p>
         <p><strong>Show Time:</strong> {state.showTime}</p>
-        <p><strong>Tickets:</strong> {state.ticketCount}</p>
-        <p><strong>Total:</strong> ₹{totalAmount}</p>
+        <p><strong>Tickets:</strong> {ticketCount}</p>
+        <p><strong>Total:</strong> ₹{isNaN(totalAmount) ? "0" : totalAmount}</p>
       </div>
 
       <button
