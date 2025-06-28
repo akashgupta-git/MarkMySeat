@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: "/api",
-  withCredentials: true
+  baseURL: 'http://16.171.161.69/api', // 💡 Use full IP here
+  withCredentials: true,
 });
+
 
 // Add auth token to requests if available
 API.interceptors.request.use((config) => {
