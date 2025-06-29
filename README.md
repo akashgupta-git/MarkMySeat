@@ -80,7 +80,7 @@ VITE_RAZORPAY_KEY_ID=rzp_test_abc123xyz
 
 ```env
 PORT=8080
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/markmyseat
+MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=supersecurejwtkey
 RAZORPAY_KEY_ID=rzp_test_abc123xyz
 RAZORPAY_KEY_SECRET=secretkey987xyz
@@ -218,7 +218,3 @@ This project is licensed under the **MIT License**.
 ⭐ Star this repo to support the project
 🛠️ Fork it to build your own version
 📩 PRs are welcome to enhance features!
-
-```
-
----
