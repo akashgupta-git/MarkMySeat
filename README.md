@@ -1,6 +1,7 @@
 # 🎟️ MarkMySeat — Full-Stack Movie Ticket Booking App
 
 ![MERN Stack](https://img.shields.io/badge/MERN-Stack-green)
+![Architecture](https://img.shields.io/badge/System--Design-Diagram-blueviolet)
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-Jenkins%20%2B%20AWS-blue)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
@@ -12,7 +13,7 @@
 
 ## 🚀 Live Demo
 
-🔗 **[MarkMySeat is Live](http://your-ec2-domain-or-ip)**  
+🔗 **[MarkMySeat is Live](http://51.21.27.2)**  
 _📦 Deployed using Jenkins CI/CD on AWS EC2 with Nginx and PM2_
 
 ---
@@ -44,11 +45,13 @@ _📦 Deployed using Jenkins CI/CD on AWS EC2 with Nginx and PM2_
 ```
 
 MarkMySeat/
-├── client/             # React frontend (TypeScript)
-│   └── .env            # Razorpay Key ID
-├── server/             # Express backend
-│   └── .env            # MongoDB, Razorpay Secret, JWT
-├── Jenkinsfile         # Jenkins CI/CD pipeline
+├── client/                         # React frontend (TypeScript)
+│   └── .env                        # Razorpay Key ID
+├── docs/                           # Documentations
+│   └── markmyseat-architecture.png # Architecture Diagram
+├── server/                         # Express backend
+│   └── .env                        # MongoDB, Razorpay Secret, JWT
+├── Jenkinsfile                     # Jenkins CI/CD pipeline
 ├── .gitignore
 └── README.md
 
@@ -61,7 +64,7 @@ MarkMySeat/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/MarkMySeat.git
+git clone https://github.com/akashgupta-git/MarkMySeat.git
 cd MarkMySeat
 ````
 
@@ -70,17 +73,17 @@ cd MarkMySeat
 #### `/client/.env`
 
 ```env
-VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
+VITE_RAZORPAY_KEY_ID=rzp_test_abc123xyz
 ```
 
 #### `/server/.env`
 
 ```env
 PORT=8080
-MONGO_URI=your_mongodb_connection
-JWT_SECRET=your_jwt_secret
-RAZORPAY_KEY_ID=your_key_id
-RAZORPAY_KEY_SECRET=your_key_secret
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/markmyseat
+JWT_SECRET=supersecurejwtkey
+RAZORPAY_KEY_ID=rzp_test_abc123xyz
+RAZORPAY_KEY_SECRET=secretkey987xyz
 ```
 
 ### 3. Install Dependencies
@@ -114,7 +117,7 @@ npm run dev
 ### CI/CD Pipeline Overview
 
 * GitHub Repo Push ➝ Jenkins Webhook
-* Jenkins pulls latest code and:
+* Jenkins pulls the latest code and:
 
   * Installs dependencies
   * Runs backend & frontend builds
@@ -128,24 +131,24 @@ npm run dev
 * Jenkins (Port 8080)
 * Nginx (Port 80 for frontend, reverse proxy)
 * PM2 (Manages backend process)
-* MongoDB Atlas for DB
+* MongoDB Atlas (Database)
 
 ---
 
 ## 💳 Razorpay Integration
 
 * Razorpay order created on backend
-* Payment verified with signature (HMAC SHA256)
-* Verified payment triggers booking API call
-* Bookings and payments are stored securely in MongoDB
+* Payment verified using HMAC SHA256 signature
+* Verified payment triggers booking API
+* Booking and payment stored securely in MongoDB
 
 ---
 
 ## 🔐 Security
 
-* Passwords hashed with bcrypt
+* Passwords hashed using bcrypt
 * JWT stored securely in localStorage
-* Razorpay signature verification before confirming booking
+* Razorpay signature verification before finalizing booking
 * All secrets excluded via `.gitignore`
 
 ---
@@ -154,9 +157,45 @@ npm run dev
 
 * 🛠️ Admin Panel for adding shows/movies/seats
 * 📩 Email confirmation after successful booking
-* 📊 Analytics dashboard for admin
-* 📎 Downloadable e-tickets (PDF)
-* 💬 Live support chat
+* 📊 Admin Analytics Dashboard
+* 📎 Downloadable E-Tickets (PDF)
+* 💬 Live Support Chat
+
+---
+
+## 🏗️ System Architecture
+
+MarkMySeat follows a scalable and modular MERN-based architecture optimized for real-time booking, secure payments, and robust cloud deployment.
+
+![System Architecture Diagram](docs/markmyseat-architecture.png)
+
+### 🔹 Overview:
+
+* **Frontend (React + TypeScript + Tailwind)**
+
+  * Handles routing, seat selection, booking flow
+  * Uses Context API and `ProtectedRoutes` for auth-secured views
+  * Communicates with backend using Axios
+
+* **Backend (Node.js + Express + MongoDB)**
+
+  * Stateless JWT-based authentication
+  * REST APIs for login, registration, shows, and bookings
+  * Validates seat selection and creates bookings
+  * Admin-only routes for managing shows and seat maps
+
+* **Payments (Razorpay)**
+
+  * Frontend initiates payment; server creates order
+  * Backend verifies signature before saving booking
+
+* **Deployment (Jenkins + AWS + Nginx + PM2)**
+
+  * Jenkins pulls latest code and rebuilds on each push
+  * Nginx reverse proxies frontend and backend
+  * PM2 keeps backend always running
+
+📁 Diagram stored at `/docs/markmyseat-architecture.png`.
 
 ---
 
@@ -164,7 +203,7 @@ npm run dev
 
 **Akash Gupta**
 💼 B.Tech CSE | Cloud & Full Stack Enthusiast
-🌐 [GitHub](https://github.com/Akash-Gupta-dev)
+🌐 [GitHub](https://github.com/akashgupta-git)
 
 ---
 
@@ -176,13 +215,10 @@ This project is licensed under the **MIT License**.
 
 ## 🙌 Show Your Support
 
-⭐ this repo to support the project
+⭐ Star this repo to support the project
 🛠️ Fork it to build your own version
 📩 PRs are welcome to enhance features!
 
 ```
 
 ---
-
-Let me know once you've committed this `README.md`, and I’ll guide you through pushing the code to GitHub and setting up Jenkins + AWS 🚀
-```
