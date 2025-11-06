@@ -15,7 +15,8 @@ const paymentRoutes = require("./routes/paymentRoutes"); // ✅ Razorpay route
 const app = express();
 
 // Middlewares
-app.use(cors({ origin: "http://51.21.27.2:8080", credentials: true }));
+app.use(cors({ origin: ["https://markmyseat.netlify.app",
+    "http://localhost:3000"], credentials: true }));
 app.use(express.json());
 
 // Routes
