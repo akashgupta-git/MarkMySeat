@@ -198,7 +198,7 @@ App runs at:
 
 ### 🔹 **Version 1 (Jenkins + AWS + Nginx + PM2)**
 
-![v1 Architecture](docs/markmyseat-architecture-v1.png)
+![v1 Architecture](docs/markmyseat_architecture_v1.png)
 
 **Flow:**
 
@@ -211,7 +211,7 @@ App runs at:
 
 ### 🔹 **Version 2 (Render + Netlify + MongoDB Atlas)**
 
-![v2 Architecture](docs/markmyseat-architecture-v2.png)
+![v2 Architecture](docs/markmyseat_architecture_v2.png)
 
 **Flow:**
 
