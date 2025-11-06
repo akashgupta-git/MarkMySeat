@@ -1,5 +1,3 @@
-
-```markdown
 # 🎟️ MarkMySeat — Full-Stack Movie Ticket Booking App
 
 ![MERN Stack](https://img.shields.io/badge/MERN-Stack-green)
