@@ -2,44 +2,87 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const os = require("os");
 
-// Load environment variables
 dotenv.config();
 
-// Route files
 const authRoutes = require("./routes/auth");
 const bookingRoutes = require("./routes/bookingRoutes");
 const movieRoutes = require("./routes/movieRoutes");
-const paymentRoutes = require("./routes/paymentRoutes"); // ✅ Razorpay route
+const paymentRoutes = require("./routes/paymentRoutes");
 
 const app = express();
 
-// Middlewares
-app.use(cors({ origin: ["https://markmyseat.netlify.app",
-    "http://localhost:3000"], credentials: true }));
+const allowedOrigins = [
+  "https://markmyseat.netlify.app",
+  "http://localhost:3000",
+  "http://localhost:5173"
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn("❌ CORS blocked request from:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
-// Routes
-app.use("/api/auth", authRoutes);             // Auth (Register/Login)
-app.use("/api/bookings", bookingRoutes);      // Booking Routes (Protected)
-app.use("/api/movies", movieRoutes);          // Movie Routes
-app.use("/api/payment", paymentRoutes);       // ✅ Razorpay Payment
+app.use("/api/auth", authRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/movies", movieRoutes);
+app.use("/api/payment", paymentRoutes);
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => {
-    console.error("❌ MongoDB Connection Failed:");
-    console.error(err.message);
-  });
+app.get("/api/health", async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const mongoStatus =
+      dbState === 1
+        ? "✅ Connected"
+        : dbState === 2
+        ? "⏳ Connecting"
+        : dbState === 0
+        ? "❌ Disconnected"
+        : "⚠️ Unknown";
 
-// Test
+    res.status(200).json({
+      status: "OK",
+      service: "MarkMySeat Backend",
+      environment: process.env.NODE_ENV || "development",
+      mongo: mongoStatus,
+      uptime: `${Math.round(process.uptime())}s`,
+      hostname: os.hostname(),
+    });
+  } catch (err) {
+    console.error("❌ Health check failed:", err.message);
+    res.status(500).json({ status: "ERROR", message: err.message });
+  }
+});
+
+app.get("/api/version", (req, res) => {
+  const version = process.env.BUILD_VERSION || "v1.0.0";
+  const buildTime = process.env.BUILD_TIME || new Date().toISOString();
+  res.json({ version, buildTime });
+});
+
 app.get("/", (req, res) => {
-  res.send("🎉 MarkMySeat API is live!");
+  res.send("🎉 MarkMySeat API is live and ready!");
 });
 
-  // Start the server
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB Connection Failed:", err.message));
+
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
