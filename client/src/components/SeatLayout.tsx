@@ -25,13 +25,14 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
         const data = await getAvailableSeats(movieId, showTime);
         setAvailableSeats(data.availableSeats || []);
         setSelectedSeats([]);
-        onSeatSelect([]);
+        onSeatSelect([]); // triggers ESLint warning if not in deps
       } catch (err) {
         console.error("Error fetching available seats:", err);
       }
     };
     fetchSeats();
-  }, [movieId, showTime]);
+    // Added onSeatSelect to dependency array
+  }, [movieId, showTime, onSeatSelect]);
 
   const handleSeatClick = (seat: string) => {
     if (!availableSeats.includes(seat)) return;
