@@ -1,14 +1,15 @@
 import axios from "axios";
 
-// ✅ Dynamically pick backend URL from .env
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
+// ✅ Dynamically select backend URL
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 const API = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
 });
 
-// ✅ Add auth token automatically to every request
+// ✅ Add auth token to every request if available
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
