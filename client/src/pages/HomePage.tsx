@@ -12,7 +12,10 @@ interface Movie {
   rating?: number;
 }
 
-const MovieCard: React.FC<{ movie: Movie; onClick: () => void }> = ({ movie, onClick }) => (
+const MovieCard: React.FC<{ movie: Movie; onClick: () => void }> = ({
+  movie,
+  onClick,
+}) => (
   <motion.div
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.97 }}
@@ -49,26 +52,39 @@ const HomePage: React.FC = () => {
   const [backendStatus, setBackendStatus] = useState<string>("⏳ Checking backend...");
   const navigate = useNavigate();
 
+  // ✅ Backend health check (logs only, no visual errors)
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/health`);
-        setBackendStatus(res.ok ? "✅ Connected to backend" : "❌ Backend unreachable");
-      } catch {
+        const baseUrl =
+          process.env.REACT_APP_API_URL || "http://localhost:8080/api";
+        const res = await fetch(`${baseUrl}/health`);
+        if (res.ok) {
+          setBackendStatus("✅ Connected to backend");
+          console.log("✅ Backend connection successful.");
+        } else {
+          setBackendStatus("❌ Backend unreachable");
+          console.warn("⚠️ Backend reachable but returned non-OK response.");
+        }
+      } catch (error) {
         setBackendStatus("❌ Backend not responding");
+        console.error("❌ Backend health check failed:", error);
       }
     };
     checkBackend();
   }, []);
 
+  // ✅ Fetch movies (errors logged to console only)
   useEffect(() => {
     const fetchMovies = async () => {
       try {
         const response = await getMovies();
-        const movieList = Array.isArray(response) ? response : response.movies || [];
+        const movieList = Array.isArray(response)
+          ? response
+          : response.movies || [];
         setMovies(movieList);
-      } catch {
-        console.error("Failed to fetch movies");
+      } catch (error) {
+        console.error("❌ Failed to fetch movies:", error);
       } finally {
         setLoading(false);
       }
@@ -76,6 +92,7 @@ const HomePage: React.FC = () => {
     fetchMovies();
   }, []);
 
+  // ✅ Carousel settings
   const settings = {
     dots: true,
     infinite: true,
@@ -120,7 +137,9 @@ const HomePage: React.FC = () => {
       >
         <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl shadow-xl p-6 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-2">Now Showing</h2>
-          <p className="text-sm text-indigo-100/90">Book your favorite movie seats with ease & pay securely 💳</p>
+          <p className="text-sm text-indigo-100/90">
+            Book your favorite movie seats with ease & pay securely 💳
+          </p>
         </div>
       </motion.section>
 
