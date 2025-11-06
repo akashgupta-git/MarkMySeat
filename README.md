@@ -1,12 +1,3 @@
-Perfect, Akash 👏
-
-Here’s your **fully enhanced, visually consistent, and professional README.md**, updated to include **both versions — v1 (Jenkins + AWS)** and **v2 (Render + Netlify)**.
-
-It keeps your original structure, badges, emojis, and formatting, but with clean sectioning and improved clarity so it looks *premium and portfolio-ready*.
-
-You can copy this directly into your project’s root as `README.md`.
-
----
 
 ```markdown
 # 🎟️ MarkMySeat — Full-Stack Movie Ticket Booking App
