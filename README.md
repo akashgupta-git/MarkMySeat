@@ -198,7 +198,7 @@ App runs at:
 
 ### 🔹 **Version 1 (Jenkins + AWS + Nginx + PM2)**
 
-![v1 Architecture](docs/markmyseat-architecture.png)
+![v1 Architecture](docs/markmyseat-architecture-v1.png)
 
 **Flow:**
 
