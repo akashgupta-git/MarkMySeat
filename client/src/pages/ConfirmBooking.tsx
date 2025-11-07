@@ -1,132 +1,151 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useState, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { createBooking } from "../api/auth";
-import axios from "axios";
+import { createBooking } from "../api/bookings";
 import { AuthContext } from "../context/AuthContext";
+import { motion } from "framer-motion";
 
-interface BookingState {
+// This interface defines the data we expect from BookingPage
+interface BookingData {
   movieId: string;
   movieTitle: string;
+  posterUrl?: string;
   seatNumbers: string[];
   showTime: string;
-  ticketCount: number;
+  totalPrice: number;
 }
 
 const ConfirmBooking: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get booking details passed from BookingPage
+  const {
+    movieId,
+    movieTitle,
+    posterUrl,
+    seatNumbers,
+    showTime,
+    totalPrice,
+  } = (location.state as BookingData) || {};
+
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const state = location.state as BookingState | null;
+  // If no data was passed, redirect to home
+  if (!movieId || !seatNumbers || seatNumbers.length === 0) {
+    // This timeout prevents a render-loop error
+    setTimeout(() => navigate("/"), 1);
+    return null;
+  }
 
-  const ticketCount = state?.ticketCount ?? state?.seatNumbers?.length ?? 0;
-  const ticketPrice = 250;
-  const totalAmount = ticketCount * ticketPrice;
-
-  useEffect(() => {
-    if (!state) navigate("/");
-  }, [state, navigate]);
-
-  const handlePayment = async () => {
-    if (!state || ticketCount <= 0 || totalAmount <= 0) {
-      setMessage("❌ Invalid ticket count or total amount.");
-      return;
-    }
-
+  const handleConfirmBooking = async () => {
     setLoading(true);
-    setMessage("");
-
+    setError(null);
+    
     try {
-      // Step 1: Create order from backend
-      const res = await axios.post("http://51.21.27.2:8080/api/payment/create-order", {
-  amount: totalAmount,
-  currency: "INR",
-});
+      // 1. Create the booking in our database
+      const bookingResponse = await createBooking(movieId, seatNumbers, showTime);
 
+      // 2. Here you would normally call your payment API (e.g., Razorpay)
+      // For this example, we'll simulate a successful payment
+      console.log("Booking created:", bookingResponse);
+      
+      // 3. (Simulating payment)
+      // const payment = await initiatePayment(totalPrice, bookingResponse.booking._id);
+      // if (payment.success) { ... }
 
-      const { orderId, amount, currency } = res.data;
-
-      // Step 2: Razorpay checkout options
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_aPXIYDn69LCApU",
-        amount,
-        currency,
-        name: "MarkMySeat",
-        description: "Movie Ticket Booking",
-        order_id: orderId,
-        handler: async (response: any) => {
-          try {
-            // Step 3: Verify payment
-            const verifyRes = await axios.post("/api/payment/verify", {
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-              amount,
-              email: user?.email || "guest@example.com",
-            });
-
-            if (verifyRes.data.success) {
-              setMessage("✅ Payment verified! Booking confirmed...");
-
-              // Step 4: Save booking for each seat
-              await Promise.all(
-                state.seatNumbers.map((seat) =>
-                  createBooking(state.movieId, seat, state.showTime)
-                )
-              );
-
-              setTimeout(() => navigate("/success"), 2000);
-            } else {
-              setMessage("❌ Payment verification failed.");
-            }
-          } catch (err) {
-            console.error("Verification failed:", err);
-            setMessage("❌ Payment verification error. Please contact support.");
-          }
+      // 4. On success, navigate to the success page
+      navigate("/success", {
+        state: {
+          movieTitle,
+          seatNumbers,
+          showTime,
         },
-        prefill: {
-          name: user?.name || "Akash",
-          email: user?.email || "guest@example.com",
-        },
-        theme: { color: "#22c55e" },
-      };
+      });
 
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      console.error("Payment initiation failed:", err);
-      setMessage("❌ Payment initiation failed.");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "An unknown error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!state) return null;
-
   return (
-    <div className="flex flex-col items-center p-8">
-      <h2 className="text-3xl font-bold mb-6">Confirm Your Booking</h2>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gray-50 p-4 sm:p-8"
+    >
+      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <h1 className="text-3xl font-bold text-gray-900 p-6 border-b">
+          Confirm Your Booking
+        </h1>
+        
+        <div className="md:flex">
+          {/* Left Side: Movie Details */}
+          <div className="md:w-1/3 p-6">
+            <img
+              src={posterUrl || "/fallback.jpg"}
+              alt={movieTitle}
+              className="rounded-lg shadow-md object-cover"
+            />
+          </div>
 
-      <div className="bg-white p-6 rounded shadow-md w-full max-w-md text-lg">
-        <p><strong>Movie:</strong> {state.movieTitle}</p>
-        <p><strong>Seats:</strong> {state.seatNumbers.join(", ")}</p>
-        <p><strong>Show Time:</strong> {state.showTime}</p>
-        <p><strong>Tickets:</strong> {ticketCount}</p>
-        <p><strong>Total:</strong> ₹{isNaN(totalAmount) ? "0" : totalAmount}</p>
+          {/* Right Side: Booking Summary */}
+          <div className="md:w-2/3 p-6">
+            <h2 className="text-2xl font-semibold text-indigo-600">
+              {movieTitle}
+            </h2>
+            
+            <div className="mt-4 space-y-3 text-gray-700">
+              <p>
+                <strong>Show Time:</strong> {showTime}
+              </p>
+              <p>
+                <strong>Seats:</strong>
+                <span className="ml-2 font-bold text-gray-900">
+                  {seatNumbers.join(", ")}
+                </span>
+              </p>
+              <p>
+                <strong>Tickets:</strong> {seatNumbers.length}
+              </p>
+              <hr className="my-3" />
+              <p className="text-2xl font-bold text-gray-900">
+                <strong>Total Price:</strong>
+                <span className="ml-2 text-indigo-600">₹{totalPrice || 150 * seatNumbers.length}</span>
+              </p>
+            </div>
+            
+            {error && (
+              <div className="mt-4 text-red-600 bg-red-100 p-3 rounded-lg">
+                <strong>Error:</strong> {error}
+              </div>
+            )}
+
+            <button
+              onClick={handleConfirmBooking}
+              disabled={loading}
+              className="mt-6 w-full bg-green-600 text-white px-8 py-3 rounded-lg text-lg font-semibold
+                         hover:bg-green-700 transition-all duration-300
+                         disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {loading ? "Processing..." : "Confirm & Pay"}
+            </button>
+            
+            <button
+              onClick={() => navigate(`/book/${movieId}`)}
+              disabled={loading}
+              className="mt-3 w-full text-center text-gray-600 hover:text-indigo-600"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
       </div>
-
-      <button
-        className="mt-6 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
-        onClick={handlePayment}
-        disabled={loading}
-      >
-        {loading ? "Processing..." : "Proceed to Payment"}
-      </button>
-
-      {message && <p className="mt-4 text-xl text-blue-600">{message}</p>}
-    </div>
+    </motion.div>
   );
 };
 

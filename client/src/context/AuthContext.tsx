@@ -1,58 +1,45 @@
-import React, { createContext, useState, useEffect, ReactNode } from "react";
-//import axios from "axios";
-
-export interface User {
-  _id: string;
-  name: string;
-  email: string;
-  token: string; 
-}
+import React, { createContext, useState, useEffect } from "react";
+import { User } from "../types/User";
+import { verifyToken } from "../api/auth";
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (token: string, user: User) => void;
-  logout: () => void;
+  setUser: (user: User | null) => void;
+  loading: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
-  token: null,
-  login: () => {},
-  logout: () => {},
+  setUser: () => {},
+  loading: true,
 });
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
+    const checkUser = async () => {
+      try {
+        const userData = await verifyToken();
+        if (userData) {
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error("Session verify failed:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkUser();
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
-    setToken(newToken);
-    setUser(newUser);
-  };
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setToken(null);
-    setUser(null);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, setUser, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

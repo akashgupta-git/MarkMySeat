@@ -28,4 +28,18 @@ router.get("/all", async (req, res) => {
   }
 });
 
+// ✅ GET: Get a single movie by ID (This is the new route)
+router.get("/:id", async (req, res) => {
+  try {
+    const movie = await Movie.findById(req.params.id);
+    if (!movie) {
+      return res.status(440).json({ message: "Movie not found" });
+    }
+    res.status(200).json(movie);
+  } catch (err) {
+    console.error("Error fetching movie:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

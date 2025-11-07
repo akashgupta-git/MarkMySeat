@@ -1,83 +1,103 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { registerUser } from "../api/auth";
+import { AuthContext } from "../context/AuthContext";
+import { motion } from "framer-motion";
 
 const RegisterPage: React.FC = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { setUser } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [error, setError] = useState("");
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError(null);
+    setLoading(true);
+
+    if (!name || !email || !password) {
+      setError("All fields are required.");
+      setLoading(false);
+      return;
+    }
 
     try {
-      await axios.post("/api/auth/register", form);
-      navigate("/login");
+      const { user } = await registerUser({ name, email, password });
+      setUser(user);
+      navigate("/"); // Redirect to homepage on success
     } catch (err: any) {
-      setError(err.response?.data?.msg || "Registration failed");
+      setError(err.message || "Failed to register.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-full max-w-sm"
-      >
-        <h2 className="text-2xl font-bold mb-4 text-center">Register</h2>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex items-center justify-center min-h-[80vh] bg-gray-50 px-4"
+    >
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">
+          Create Account
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              required
+            />
+          </div>
+          
+          {error && (
+            <p className="text-sm text-red-600 bg-red-100 p-3 rounded-md">{error}</p>
+          )}
 
-        {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-          className="w-full mb-3 px-3 py-2 border rounded"
-          required
-        />
-
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          className="w-full mb-3 px-3 py-2 border rounded"
-          required
-        />
-
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          className="w-full mb-3 px-3 py-2 border rounded"
-          required
-        />
-
-        <button
-          type="submit"
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-        >
-          Register
-        </button>
-
-        <p className="text-sm mt-4 text-center">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow
+                       hover:bg-indigo-700 disabled:bg-gray-400"
+          >
+            {loading ? "Creating..." : "Register"}
+          </button>
+        </form>
+        <p className="text-center text-sm text-gray-600 mt-4">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-600 hover:underline">
+          <Link to="/login" className="font-medium text-indigo-600 hover:underline">
             Login
           </Link>
         </p>
-      </form>
-    </div>
+      </div>
+    </motion.div>
   );
 };
 
