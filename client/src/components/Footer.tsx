@@ -22,7 +22,7 @@ const Footer: React.FC = () => {
 
           {/* Credit */}
           <p className="text-sm text-gray-600">
-            Built by <span className="text-gray-400 font-medium">Akash</span>
+            Developed by <span className="text-gray-400 font-medium">Akash</span>
           </p>
         </div>
 
