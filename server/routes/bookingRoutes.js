@@ -5,7 +5,19 @@ const Booking = require("../models/Booking");
 const SeatMap = require("../models/SeatMap");
 const Movie = require("../models/Movie");
 
-// ✅ GET: My Bookings (No change needed)
+// helper to generate a fresh 8x12 seat layout (A1 through H12)
+function generateDefaultSeats() {
+  const seatData = {};
+  const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  for (const row of rows) {
+    for (let i = 1; i <= 12; i++) {
+      seatData[`${row}${i}`] = { booked: false, user: null };
+    }
+  }
+  return seatData;
+}
+
+// get all bookings for the currently logged in user
 router.get("/my-bookings", protect, async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user }).populate("movie", "title");
@@ -16,10 +28,9 @@ router.get("/my-bookings", protect, async (req, res) => {
   }
 });
 
-// ✅ POST: Create Booking (Updated for multiple seats)
+// create a new booking with multiple seats
 router.post("/create", protect, async (req, res) => {
   try {
-    // We now expect 'seatNumbers' (an array) instead of 'seatNumber'
     const { movieId, seatNumbers, showTime } = req.body;
 
     if (!Array.isArray(seatNumbers) || seatNumbers.length === 0) {
@@ -31,38 +42,30 @@ router.post("/create", protect, async (req, res) => {
 
     let seatMap = await SeatMap.findOne({ movie: movieId, showTime });
 
-    // Auto-create seat map if it doesn't exist
+    // lazily create the seat map on first booking for this show
     if (!seatMap) {
-      const seatData = {};
-      for (let i = 1; i <= 30; i++) {
-        seatData[`S${i}`] = { booked: false, user: null };
-      }
-      seatMap = new SeatMap({ movie: movieId, showTime, seats: seatData });
-      // We will save it after checks
+      seatMap = new SeatMap({ movie: movieId, showTime, seats: generateDefaultSeats() });
     }
 
-    // Check if ALL seats are available *before* booking any
+    // validate all seats first before marking any as booked
     for (const seatNum of seatNumbers) {
       const seat = seatMap.seats.get(seatNum);
       if (!seat) return res.status(404).json({ message: `Seat ${seatNum} not found` });
       if (seat.booked) return res.status(400).json({ message: `Seat ${seatNum} is already booked` });
     }
 
-    // Book all seats
+    // mark them booked
     for (const seatNum of seatNumbers) {
       seatMap.seats.set(seatNum, { booked: true, user: req.user });
     }
-    
-    // Save the updated seat map
     await seatMap.save();
 
-    // Create a SINGLE booking record with all the seats
-    // Note: You should update your Booking.js model to store an array
+    // store one booking record for all the seats together
     const newBooking = new Booking({
       user: req.user,
       movie: movieId,
-      seatNumber: seatNumbers.join(', '), // Keep this for backward compatibility or remove
-      seatNumbers: seatNumbers, // Add this field to your Booking.js schema
+      seatNumber: seatNumbers.join(', '), // legacy field, keeping for now
+      seatNumbers: seatNumbers,
       showTime
     });
     await newBooking.save();
@@ -75,7 +78,7 @@ router.post("/create", protect, async (req, res) => {
   }
 });
 
-// ✅ GET: Available Seats (No change needed)
+// returns which seats are still available for a given movie + showtime
 router.get("/available-seats", async (req, res) => {
   try {
     const { movieId, showTime } = req.query;
@@ -86,23 +89,13 @@ router.get("/available-seats", async (req, res) => {
 
     let seatMap = await SeatMap.findOne({ movie: movieId, showTime });
 
-    // Auto-create if missing
+    // create default layout if no one has booked for this show yet
     if (!seatMap) {
-      const seatData = {};
-      for (let i = 1; i <= 30; i++) {
-        seatData[`S${i}`] = { booked: false, user: null };
-      }
-
-      seatMap = new SeatMap({
-        movie: movieId,
-        showTime,
-        seats: seatData
-      });
-
+      seatMap = new SeatMap({ movie: movieId, showTime, seats: generateDefaultSeats() });
       await seatMap.save();
     }
 
-    // Get available seats
+    // collect seats that aren't booked
     const availableSeats = [];
     for (const [seatNum, data] of seatMap.seats.entries()) {
       if (!data.booked) availableSeats.push(seatNum);

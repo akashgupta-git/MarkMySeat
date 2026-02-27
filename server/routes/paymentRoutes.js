@@ -1,24 +1,23 @@
 const express = require('express');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const Payment = require("../models/Payment"); 
+const Payment = require("../models/Payment");
 require('dotenv').config();
 
 const router = express.Router();
 
-// ✅ Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// ✅ Create Order
+// create a razorpay order (frontend calls this before opening the checkout modal)
 router.post('/create-order', async (req, res) => {
   const { amount, currency } = req.body;
 
   try {
     const options = {
-      amount: amount * 100, // paise
+      amount: amount * 100, // razorpay expects paise, not rupees
       currency,
       receipt: `receipt_order_${Date.now()}`,
     };
@@ -30,12 +29,12 @@ router.post('/create-order', async (req, res) => {
       currency: order.currency,
     });
   } catch (err) {
-    console.error('❌ Razorpay Order Error:', err);
+    console.error('Razorpay order error:', err);
     res.status(500).json({ message: 'Error creating Razorpay order' });
   }
 });
 
-// ✅ Verify Payment
+// verify the payment signature after frontend completes checkout
 router.post("/verify", async (req, res) => {
   try {
     const {
@@ -46,6 +45,7 @@ router.post("/verify", async (req, res) => {
       email
     } = req.body;
 
+    // hash-based signature verification per razorpay docs
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -53,6 +53,7 @@ router.post("/verify", async (req, res) => {
       .digest("hex");
 
     if (expectedSignature === razorpay_signature) {
+      // save payment record to db
       const saved = await Payment.create({
         razorpay_order_id,
         razorpay_payment_id,
@@ -64,17 +65,17 @@ router.post("/verify", async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: "✅ Payment verified",
+        message: "Payment verified",
         paymentId: saved._id,
       });
     } else {
       return res.status(400).json({
         success: false,
-        message: "❌ Invalid signature",
+        message: "Invalid signature",
       });
     }
   } catch (err) {
-    console.error("❌ Razorpay Verify Error:", err);
+    console.error("Razorpay verify error:", err);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",

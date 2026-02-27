@@ -1,9 +1,7 @@
 import api from "../utils/axios";
 import { AuthUser, LoginData, RegisterData, User } from "../types/User";
 
-/**
- * Register a new user
- */
+// register + save token to localStorage
 export const registerUser = async (userData: RegisterData): Promise<AuthUser> => {
   try {
     const response = await api.post("/auth/register", userData);
@@ -12,14 +10,12 @@ export const registerUser = async (userData: RegisterData): Promise<AuthUser> =>
     }
     return response.data;
   } catch (error: any) {
-    console.error("Error registering user:", error.response?.data?.message || error.message);
+    console.error("Register failed:", error.response?.data?.message || error.message);
     throw new Error(error.response?.data?.message || "Error registering user");
   }
 };
 
-/**
- * Login a user
- */
+// login + save token
 export const loginUser = async (userData: LoginData): Promise<AuthUser> => {
   try {
     const response = await api.post("/auth/login", userData);
@@ -28,22 +24,19 @@ export const loginUser = async (userData: LoginData): Promise<AuthUser> => {
     }
     return response.data;
   } catch (error: any) {
-    console.error("Error logging in:", error.response?.data?.message || error.message);
+    console.error("Login failed:", error.response?.data?.message || error.message);
     throw new Error(error.response?.data?.message || "Error logging in");
   }
 };
 
-/**
- * Verify token on app load (You may need a backend route for this)
- */
+// check if user is still logged in (called on app load)
 export const verifyToken = async (): Promise<User | null> => {
   try {
     const token = localStorage.getItem("token");
     if (!token) return null;
 
-    // Assumes you have a '/auth/me' or '/auth/verify' route
-    const response = await api.get("/auth/me"); 
-    return response.data; // Should return user data
+    const response = await api.get("/auth/me");
+    return response.data;
   } catch (error) {
     localStorage.removeItem("token");
     return null;

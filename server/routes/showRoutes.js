@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Show = require("../models/Show");
 
-// Public: Get all shows
+// get all shows (sorted newest first)
 router.get("/", async (req, res) => {
   try {
     const shows = await Show.find().sort({ createdAt: -1 });
@@ -12,7 +12,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ✅ Admin: Add a new show
+// add a new show (admin)
 router.post("/", async (req, res) => {
   try {
     const { title, time, location } = req.body;

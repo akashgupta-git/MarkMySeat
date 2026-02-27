@@ -1,1 +1,5 @@
-/api/* https://markmyseat.onrender.com/api/:splat    200
+# proxy api calls to render backend
+/api/*  https://markmyseat.onrender.com/api/:splat  200
+
+# SPA - serve index.html for all other routes
+/*  /index.html  200

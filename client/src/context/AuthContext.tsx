@@ -20,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // on mount, check if the user has a valid token saved
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -28,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setUser(userData);
         }
       } catch (error) {
-        console.error("Session verify failed:", error);
+        console.error("Session check failed:", error);
         setUser(null);
       } finally {
         setLoading(false);

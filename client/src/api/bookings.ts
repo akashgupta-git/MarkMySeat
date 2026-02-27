@@ -1,45 +1,37 @@
 import api from "../utils/axios";
 
-/**
- * Fetches available seats from GET /api/bookings/available-seats
- */
+// fetch available seats for a given movie+showtime combo
 export const getAvailableSeats = async (movieId: string, showTime: string): Promise<string[]> => {
   try {
     const response = await api.get("/bookings/available-seats", {
       params: { movieId, showTime },
     });
-    return response.data.availableSeats || []; // Return just the array of seat strings
+    return response.data.availableSeats || [];
   } catch (error) {
     console.error("Error fetching available seats:", error);
     throw new Error("Could not fetch seats.");
   }
 };
 
-// ... any other BOOKING functions like 'createBooking' go here ...
-/**
- * Creates a new booking for *multiple* seats.
- * Calls POST /api/bookings/create
- */
+// book multiple seats at once
 export const createBooking = async (
   movieId: string,
-  seatNumbers: string[], // ✅ Send an array
+  seatNumbers: string[],
   showTime: string
 ) => {
   try {
     const response = await api.post("/bookings/create", {
       movieId,
-      seatNumbers, // ✅ Pass the array
+      seatNumbers,
       showTime,
     });
     return response.data;
   } catch (error: any) {
-    console.error("Error creating booking:", error.response?.data?.message || error.message);
-    // Throw the specific backend error message
+    console.error("Booking failed:", error.response?.data?.message || error.message);
     throw new Error(error.response?.data?.message || "Error creating booking");
   }
 };
 
-// Simple interface for a booking
 export interface Booking {
   _id: string;
   movie: {
@@ -51,16 +43,13 @@ export interface Booking {
   createdAt: string;
 }
 
-/**
- * Fetches all bookings for the logged-in user
- * Calls GET /api/bookings/my-bookings
- */
+// get all bookings for current user
 export const getMyBookings = async (): Promise<Booking[]> => {
   try {
     const response = await api.get("/bookings/my-bookings");
     return response.data || [];
   } catch (error) {
-    console.error("Error fetching 'my bookings':", error);
+    console.error("Error fetching bookings:", error);
     throw error;
   }
 };

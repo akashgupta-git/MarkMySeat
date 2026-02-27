@@ -1,24 +1,21 @@
-// This is the basic User object
 export interface User {
   _id: string;
   name: string;
   email: string;
-  isAdmin?: boolean; // Optional, if you add admin roles
+  isAdmin?: boolean;
 }
 
-// This is what the backend returns on login/register
+// what comes back from login/register endpoints
 export interface AuthUser {
   token: string;
   user: User;
 }
 
-// Type for the login form
 export interface LoginData {
   email: string;
   password: string;
 }
 
-// Type for the register form
 export interface RegisterData {
   name: string;
   email: string;

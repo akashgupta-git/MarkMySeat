@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Movie = require("../models/Movie");
 
-// ✅ POST: Add a new movie (admin usage)
+// add a new movie (mainly for admin / seed purposes)
 router.post("/create", async (req, res) => {
   try {
     const { title, showTimes } = req.body;
@@ -17,7 +17,7 @@ router.post("/create", async (req, res) => {
   }
 });
 
-// ✅ GET: List all movies with showtimes
+// get all movies
 router.get("/all", async (req, res) => {
   try {
     const movies = await Movie.find();
@@ -28,12 +28,12 @@ router.get("/all", async (req, res) => {
   }
 });
 
-// ✅ GET: Get a single movie by ID (This is the new route)
+// get single movie by id
 router.get("/:id", async (req, res) => {
   try {
     const movie = await Movie.findById(req.params.id);
     if (!movie) {
-      return res.status(440).json({ message: "Movie not found" });
+      return res.status(404).json({ message: "Movie not found" });
     }
     res.status(200).json(movie);
   } catch (err) {

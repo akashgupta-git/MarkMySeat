@@ -16,11 +16,11 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    seatNumber: { // You can keep this or remove it
+    seatNumber: {
       type: String,
-      required: false, // No longer the main field
+      required: false, // kept for backward compat, seatNumbers is the real one
     },
-    seatNumbers: { // ✅ ADD THIS
+    seatNumbers: {
       type: [String],
       required: true,
     },

@@ -1,82 +1,141 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar: React.FC = () => {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem("token");
     navigate("/");
+    setMobileOpen(false);
   };
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 bg-dark/80 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex-shrink-0 flex items-center gap-2 cursor-pointer"
-            >
-              {/* Assuming you have a logo in /public/markmyseat.png */}
-              <img
-                className="h-8 w-auto"
-                src="/markmyseat.png"
-                alt="MarkMySeat"
-              />
-              <span className="font-bold text-xl text-gray-800 hidden sm:block">
-                MarkMySeat
-              </span>
-            </motion.div>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-shadow">
+              <svg viewBox="0 0 32 32" className="w-5 h-5">
+                <path d="M6 24V8l10 10 10-10v16" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-white font-bold text-xl tracking-tight group-hover:text-primary transition-colors duration-200">
+              MarkMySeat
+            </span>
           </Link>
 
-          {/* Links */}
-          <div className="flex items-center space-x-4">
+          {/* Desktop Nav */}
+          <div className="hidden sm:flex items-center gap-2">
             {user ? (
-              // --- Logged In View ---
               <>
-                <span className="text-gray-700 hidden sm:block">
-                  Hi, {user.name.split(" ")[0]}!
+                <span className="text-gray-500 text-sm mr-1">
+                  Hi, <span className="text-gray-200 font-medium">{user.name.split(" ")[0]}</span>
                 </span>
                 <Link
                   to="/my-bookings"
-                  className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  className="text-gray-400 hover:text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/5 transition-all duration-200"
                 >
                   My Bookings
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium
-                             hover:bg-indigo-700 transition"
+                  className="bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 border border-white/5"
                 >
                   Logout
                 </button>
               </>
             ) : (
-              // --- Logged Out View ---
               <>
                 <Link
                   to="/login"
-                  className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  className="text-gray-400 hover:text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-white/5 transition-all duration-200"
                 >
-                  Login
+                  Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium
-                             hover:bg-indigo-700 transition"
+                  className="bg-primary hover:bg-primary-dark text-white text-sm font-semibold px-5 py-2 rounded-lg transition-all duration-200 shadow-lg shadow-primary/20"
                 >
-                  Register
+                  Sign Up
                 </Link>
               </>
             )}
           </div>
+
+          {/* Mobile menu button */}
+          <button
+            className="sm:hidden text-gray-400 hover:text-white p-2"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {mobileOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
+
+        {/* Mobile Nav with animation */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="sm:hidden overflow-hidden"
+            >
+              <div className="pb-4 space-y-1 border-t border-white/5 pt-3">
+                {user ? (
+                  <>
+                    <p className="text-gray-500 text-sm px-3 py-2">
+                      Hi, <span className="text-gray-200 font-medium">{user.name.split(" ")[0]}</span>
+                    </p>
+                    <Link
+                      to="/my-bookings"
+                      onClick={() => setMobileOpen(false)}
+                      className="block text-gray-400 hover:text-white text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-white/5"
+                    >
+                      My Bookings
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left text-gray-400 hover:text-white text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-white/5"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={() => setMobileOpen(false)}
+                      className="block text-gray-400 hover:text-white text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-white/5"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setMobileOpen(false)}
+                      className="block bg-primary text-white text-sm font-semibold px-3 py-2.5 rounded-lg mt-1"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </nav>
   );

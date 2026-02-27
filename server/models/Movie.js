@@ -5,7 +5,7 @@ const movieSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  posterUrl: { // This field must match your seed file
+  posterUrl: {
     type: String,
     required: false,
   },
@@ -22,7 +22,7 @@ const movieSchema = new mongoose.Schema({
     required: false,
   },
   duration: {
-    type: String, // e.g., "2h 30min"
+    type: String,
     required: false,
   },
   releaseDate: {
@@ -30,7 +30,7 @@ const movieSchema = new mongoose.Schema({
     required: false,
   },
   showTimes: {
-    type: [String], // e.g., ["10:00 AM", "1:00 PM", "5:00 PM"]
+    type: [String],
     required: true,
   },
 }, { timestamps: true });

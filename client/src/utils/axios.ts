@@ -1,11 +1,11 @@
 import axios from "axios";
 
-// Create a base Axios instance
+// base axios instance - all api calls go through this
 const api = axios.create({
-  baseURL: "/api", // or your backend URL
+  baseURL: import.meta.env.VITE_API_URL || "/api",
 });
 
-// Automatically attach token from localStorage (or any secure storage you're using)
+// auto-attach jwt token if we have one
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token && config.headers) {

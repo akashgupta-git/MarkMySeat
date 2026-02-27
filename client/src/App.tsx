@@ -4,50 +4,51 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import BookingPage from "./pages/BookingPage";
-import ShowPage from "./pages/ShowPage";
 import ConfirmBooking from "./pages/ConfirmBooking";
 import SuccessPage from "./pages/SuccessPage";
 import BookingHistory from "./pages/BookingHistory";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer"; // ✅ Import Footer
+import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App: React.FC = () => {
-  const token = localStorage.getItem("token");
-
   return (
-    <div className="bg-gray-100 min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-dark">
       <Navbar />
-      <div className="flex-grow">
+      <main className="flex-grow">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-
           <Route
             path="/book/:movieId"
-            element={token ? <BookingPage /> : <Navigate to="/login" />}
+            element={
+              <ProtectedRoute>
+                <BookingPage />
+              </ProtectedRoute>
+            }
           />
-
           <Route
             path="/confirm-booking"
-            element={token ? <ConfirmBooking /> : <Navigate to="/login" />}
+            element={
+              <ProtectedRoute>
+                <ConfirmBooking />
+              </ProtectedRoute>
+            }
           />
-
-          <Route
-            path="/shows/:id"
-            element={token ? <ShowPage /> : <Navigate to="/login" />}
-          />
-
           <Route
             path="/my-bookings"
-            element={token ? <BookingHistory /> : <Navigate to="/login" />}
+            element={
+              <ProtectedRoute>
+                <BookingHistory />
+              </ProtectedRoute>
+            }
           />
-
           <Route path="/success" element={<SuccessPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-      </div>
-      <Footer /> {/* ✅ Displayed at the bottom */}
+      </main>
+      <Footer />
     </div>
   );
 };
