@@ -11,6 +11,10 @@ const authRoutes = require("./routes/auth");
 const bookingRoutes = require("./routes/bookingRoutes");
 const movieRoutes = require("./routes/movieRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const theatreAuthRoutes = require("./routes/theatreAuth");
+const theatreRoutes = require("./routes/theatreRoutes");
+const foodRoutes = require("./routes/foodRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
@@ -44,6 +48,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/movies", movieRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/theatre/auth", theatreAuthRoutes);
+app.use("/api/theatre", theatreRoutes);
+app.use("/api/food", foodRoutes);
+app.use("/api/admin", adminRoutes);
 
 // quick health check endpoint - useful for monitoring on render
 app.get("/api/health", async (req, res) => {

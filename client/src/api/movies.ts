@@ -1,4 +1,5 @@
 import api from "../utils/axios";
+import { SeatConfig } from "../types/User";
 
 export interface Movie {
   _id: string;
@@ -8,7 +9,22 @@ export interface Movie {
   description?: string;
   language?: string;
   duration?: string;
+  rating?: string;
+  cast?: string;
   showTimes: string[];
+  theatre?: {
+    _id: string;
+    name: string;
+    city?: string;
+    address?: string;
+    seatConfig?: SeatConfig;
+  } | null;
+  screen?: {
+    _id: string;
+    name: string;
+    screenNumber: number;
+    seatConfig?: SeatConfig;
+  } | null;
 }
 
 export const getMovies = async (): Promise<Movie[]> => {

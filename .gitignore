@@ -10,4 +10,5 @@ node_modules/
 
 # OS & IDE junk
 .DS_Store
+.vscode/.env.example
 .vscode/

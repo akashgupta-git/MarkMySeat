@@ -1,11 +1,13 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createBooking } from "../api/bookings";
 import { createPaymentOrder, verifyPayment } from "../api/payment";
 import { AuthContext } from "../context/AuthContext";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { getSeatCategory } from "../components/SeatLayout";
 import loadRazorpay from "../utils/loadRazorpay";
+import { getFoodMenu } from "../api/theatre";
+import { FoodItem, FoodOrderItem, SeatCategory, SeatConfig } from "../types/User";
 
 declare global {
   interface Window {
@@ -19,7 +21,11 @@ interface BookingData {
   posterUrl?: string;
   seatNumbers: string[];
   showTime: string;
+  showDate?: string;
   totalPrice: number;
+  theatreId?: string;
+  screenName?: string;
+  seatConfig?: SeatConfig | null;
 }
 
 const ConfirmBooking: React.FC = () => {
@@ -32,24 +38,67 @@ const ConfirmBooking: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("");
 
+  // Food add-on state
+  const [foodMenu, setFoodMenu] = useState<FoodItem[]>([]);
+  const [foodCart, setFoodCart] = useState<Record<string, number>>({});
+  const [showFood, setShowFood] = useState(false);
+  const [foodLoading, setFoodLoading] = useState(false);
+
+  useEffect(() => {
+    const loadFood = async () => {
+      setFoodLoading(true);
+      try {
+        const items = await getFoodMenu(bookingData?.theatreId);
+        setFoodMenu(items.filter((f) => f.isAvailable));
+      } catch {
+        // silently fail — food is optional
+      } finally {
+        setFoodLoading(false);
+      }
+    };
+    if (bookingData) loadFood();
+  }, [bookingData?.theatreId]);
+
   if (!bookingData || !bookingData.movieId || !bookingData.seatNumbers?.length) {
     setTimeout(() => navigate("/"), 10);
     return null;
   }
 
-  const { movieId, movieTitle, posterUrl, seatNumbers, showTime, totalPrice } =
+  const { movieId, movieTitle, posterUrl, seatNumbers, showTime, totalPrice, showDate, screenName, seatConfig } =
     bookingData;
+
+  const categories = seatConfig?.categories;
 
   // group seats by category for price breakdown
   const seatsByCategory = seatNumbers.reduce(
     (acc, seat) => {
-      const cat = getSeatCategory(seat.charAt(0));
+      const cat = getSeatCategory(seat.charAt(0), categories);
       if (!acc[cat.label]) acc[cat.label] = { seats: [], price: cat.price };
       acc[cat.label].seats.push(seat);
       return acc;
     },
     {} as Record<string, { seats: string[]; price: number }>
   );
+
+  // food helpers
+  const updateFoodQty = (itemId: string, delta: number) => {
+    setFoodCart((prev) => {
+      const current = prev[itemId] || 0;
+      const next = Math.max(0, current + delta);
+      if (next === 0) {
+        const { [itemId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [itemId]: next };
+    });
+  };
+
+  const foodTotal = foodMenu.reduce((sum, item) => sum + (foodCart[item._id] || 0) * item.price, 0);
+  const grandTotal = totalPrice + foodTotal;
+
+  const foodOrders: FoodOrderItem[] = foodMenu
+    .filter((f) => foodCart[f._id] > 0)
+    .map((f) => ({ item: f._id, name: f.name, quantity: foodCart[f._id], price: f.price }));
 
   const handlePay = async () => {
     setLoading(true);
@@ -66,16 +115,16 @@ const ConfirmBooking: React.FC = () => {
       }
 
       setStatus("Creating order...");
-      const { orderId } = await createPaymentOrder(totalPrice);
+      const { orderId } = await createPaymentOrder(grandTotal);
 
       setStatus("");
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_aPXIYDn69LCApU",
-        amount: totalPrice * 100,
+        amount: grandTotal * 100,
         currency: "INR",
         name: "MarkMySeat",
-        description: `${movieTitle} - ${seatNumbers.length} ticket(s)`,
+        description: `${movieTitle} - ${seatNumbers.length} ticket(s)${foodOrders.length ? " + snacks" : ""}`,
         order_id: orderId,
         handler: async (response: any) => {
           try {
@@ -86,15 +135,24 @@ const ConfirmBooking: React.FC = () => {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              amount: totalPrice,
+              amount: grandTotal,
               email: user?.email || "",
             });
 
             if (verification.success) {
               setStatus("Confirming your seats...");
-              await createBooking(movieId, seatNumbers, showTime);
+              const result = await createBooking(movieId, seatNumbers, showTime, grandTotal, verification.paymentId, foodOrders.length > 0 ? foodOrders : undefined, foodTotal || undefined, showDate);
               navigate("/success", {
-                state: { movieTitle, seatNumbers, showTime, totalPrice },
+                state: {
+                  bookingId: result.booking?.bookingId || "",
+                  bookingMongoId: result.booking?._id || "",
+                  movieTitle,
+                  seatNumbers,
+                  showTime,
+                  showDate: showDate || "",
+                  screenName: screenName || "",
+                  totalPrice: grandTotal,
+                },
               });
             } else {
               setError("Payment verification failed. Contact support if amount was deducted.");
@@ -109,6 +167,7 @@ const ConfirmBooking: React.FC = () => {
         prefill: {
           name: user?.name || "",
           email: user?.email || "",
+          contact: "9999999999",
         },
         theme: {
           color: "#dc354f",
@@ -172,10 +231,20 @@ const ConfirmBooking: React.FC = () => {
               <h2 className="text-lg sm:text-xl font-bold text-white truncate">
                 {movieTitle}
               </h2>
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="text-xs bg-white/10 text-gray-300 px-2.5 py-0.5 rounded-full">
                   {showTime}
                 </span>
+                {showDate && (
+                  <span className="text-xs bg-white/10 text-gray-300 px-2.5 py-0.5 rounded-full">
+                    {new Date(showDate + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                  </span>
+                )}
+                {screenName && (
+                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full">
+                    {screenName}
+                  </span>
+                )}
                 <span className="text-xs text-gray-400">
                   {seatNumbers.length} seat{seatNumbers.length > 1 ? "s" : ""}
                 </span>
@@ -209,15 +278,90 @@ const ConfirmBooking: React.FC = () => {
             ))}
 
             <div className="border-t border-white/5 pt-4">
+              {/* Food add-on toggle */}
+              {foodMenu.length > 0 && (
+                <div className="mb-4">
+                  <button
+                    onClick={() => setShowFood(!showFood)}
+                    className="w-full flex items-center justify-between py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🍿</span>
+                      <span className="text-sm font-medium text-gray-200 group-hover:text-white">Add Snacks & Beverages</span>
+                      {foodTotal > 0 && (
+                        <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">₹{foodTotal}</span>
+                      )}
+                    </div>
+                    <svg className={`w-4 h-4 text-gray-500 transition-transform ${showFood ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  <AnimatePresence>
+                    {showFood && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-3 space-y-2">
+                          {foodMenu.map((item) => (
+                            <div key={item._id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+                              {item.imageUrl && (
+                                <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-white/10" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`w-2.5 h-2.5 rounded-sm flex-shrink-0 ${item.isVeg ? "bg-emerald-500" : "bg-red-500"}`} />
+                                  <p className="text-sm font-medium text-gray-200 truncate">{item.name}</p>
+                                </div>
+                                <p className="text-xs text-gray-500">₹{item.price}</p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {(foodCart[item._id] || 0) > 0 ? (
+                                  <>
+                                    <button onClick={() => updateFoodQty(item._id, -1)} className="w-7 h-7 rounded-full bg-white/10 text-white text-sm flex items-center justify-center hover:bg-white/20 transition-all">−</button>
+                                    <span className="text-sm font-semibold text-white w-4 text-center">{foodCart[item._id]}</span>
+                                    <button onClick={() => updateFoodQty(item._id, 1)} className="w-7 h-7 rounded-full bg-primary text-white text-sm flex items-center justify-center hover:bg-primary-dark transition-all">+</button>
+                                  </>
+                                ) : (
+                                  <button onClick={() => updateFoodQty(item._id, 1)} className="text-xs text-primary font-semibold px-3 py-1.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-all">ADD</button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* Subtotals */}
+              {foodTotal > 0 && (
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Tickets</span>
+                    <span className="text-gray-300">₹{totalPrice.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Snacks & Beverages</span>
+                    <span className="text-gray-300">₹{foodTotal.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-base font-bold text-white">Total Amount</p>
                   <p className="text-xs text-gray-500">
-                    {seatNumbers.length} ticket{seatNumbers.length > 1 ? "s" : ""} incl. taxes
+                    {seatNumbers.length} ticket{seatNumbers.length > 1 ? "s" : ""}{foodTotal > 0 ? " + snacks" : ""} incl. taxes
                   </p>
                 </div>
                 <p className="text-2xl font-bold gradient-text">
-                  ₹{totalPrice.toLocaleString()}
+                  ₹{grandTotal.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -251,7 +395,7 @@ const ConfirmBooking: React.FC = () => {
                   Processing...
                 </span>
               ) : (
-                `Pay ₹${totalPrice.toLocaleString()}`
+                `Pay ₹${grandTotal.toLocaleString()}`
               )}
             </button>
           </div>

@@ -3,13 +3,16 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 interface SuccessData {
+  bookingId: string;
+  bookingMongoId: string;
   movieTitle: string;
   seatNumbers: string[];
   showTime: string;
+  showDate?: string;
+  screenName?: string;
   totalPrice: number;
 }
 
-// random confetti pieces for the celebration effect
 function generateConfetti(count: number) {
   const colors = ["#dc354f", "#ff6b81", "#06b6d4", "#a855f7", "#22c55e", "#eab308", "#f97316"];
   return Array.from({ length: count }, (_, i) => ({
@@ -36,11 +39,13 @@ const SuccessPage: React.FC = () => {
 
   if (!data) return null;
 
-  const { movieTitle, seatNumbers, showTime, totalPrice } = data;
+  const { bookingId, bookingMongoId, movieTitle, seatNumbers, showTime, showDate, screenName, totalPrice } = data;
+
+  const verifyUrl = `${window.location.origin}/verify/${bookingId}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(verifyUrl)}&bgcolor=0a0a1a&color=ffffff`;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Confetti */}
       {confettiPieces.map((piece) => (
         <div
           key={piece.id}
@@ -100,7 +105,6 @@ const SuccessPage: React.FC = () => {
 
         {/* E-Ticket Card */}
         <div className="glass-strong rounded-2xl overflow-hidden">
-          {/* Ticket header */}
           <div className="bg-gradient-to-r from-primary/20 to-indigo-500/10 p-5 text-center">
             <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-medium">
               E-Ticket
@@ -108,6 +112,11 @@ const SuccessPage: React.FC = () => {
             <h2 className="text-xl font-bold text-white mt-1.5">
               {movieTitle}
             </h2>
+            {bookingId && (
+              <p className="text-xs text-accent font-mono mt-2 bg-accent/10 inline-block px-3 py-1 rounded-full">
+                {bookingId}
+              </p>
+            )}
           </div>
 
           {/* Tear line */}
@@ -117,49 +126,73 @@ const SuccessPage: React.FC = () => {
             <div className="absolute -right-3 -top-3 w-6 h-6 rounded-full bg-dark" />
           </div>
 
-          {/* Ticket details */}
           <div className="p-5 sm:p-6 space-y-4">
             <div className="flex justify-between">
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
-                  Show Time
-                </p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Show Time</p>
                 <p className="font-semibold text-gray-200 mt-0.5">{showTime}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
-                  Tickets
-                </p>
-                <p className="font-semibold text-gray-200 mt-0.5">
-                  {seatNumbers.length}
-                </p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Tickets</p>
+                <p className="font-semibold text-gray-200 mt-0.5">{seatNumbers.length}</p>
               </div>
             </div>
 
-            <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
-                Seats
-              </p>
-              <p className="font-semibold text-gray-200 mt-0.5">
-                {seatNumbers.sort().join(", ")}
-              </p>
-            </div>
-
-            {totalPrice && (
-              <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
-                  Amount Paid
-                </p>
-                <p className="text-2xl font-bold gradient-text mt-1">
-                  ₹{totalPrice.toLocaleString()}
-                </p>
+            {(showDate || screenName) && (
+              <div className="flex justify-between">
+                {showDate && (
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Date</p>
+                    <p className="font-semibold text-gray-200 mt-0.5">
+                      {new Date(showDate + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                )}
+                {screenName && (
+                  <div className={showDate ? "text-right" : ""}>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Screen</p>
+                    <p className="font-semibold text-gray-200 mt-0.5">{screenName}</p>
+                  </div>
+                )}
               </div>
             )}
+
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Seats</p>
+              <p className="font-semibold text-gray-200 mt-0.5">{seatNumbers.sort().join(", ")}</p>
+            </div>
+
+            {totalPrice > 0 && (
+              <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Amount Paid</p>
+                <p className="text-2xl font-bold gradient-text mt-1">₹{totalPrice.toLocaleString()}</p>
+              </div>
+            )}
+
+            {/* QR Code */}
+            <div className="flex flex-col items-center pt-2">
+              <a href={verifyUrl} target="_blank" rel="noopener noreferrer">
+                <img
+                  src={qrUrl}
+                  alt="Ticket QR Code"
+                  className="w-36 h-36 rounded-lg border border-white/10 bg-dark p-1"
+                />
+              </a>
+              <p className="text-[10px] text-gray-500 mt-2">Scan or tap to view your ticket</p>
+            </div>
           </div>
         </div>
 
         {/* Actions */}
         <div className="mt-6 space-y-3">
+          {bookingMongoId && (
+            <Link
+              to={`/booking/${bookingMongoId}`}
+              className="block w-full text-center bg-primary hover:bg-primary-dark text-white py-3.5 rounded-xl font-semibold transition-colors shadow-lg shadow-primary/20"
+            >
+              View Full Ticket
+            </Link>
+          )}
           <Link
             to="/my-bookings"
             className="block w-full text-center bg-white/5 hover:bg-white/10 text-white py-3.5 rounded-xl font-semibold transition-colors border border-white/5"

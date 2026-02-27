@@ -1,45 +1,95 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { getAvailableSeats } from "../api/bookings";
+import { SeatConfig, SeatCategory } from "../types/User";
 
 interface SeatLayoutProps {
   movieId: string;
   showTime: string;
+  showDate?: string;
   onSeatSelect: (seats: string[]) => void;
   maxSelection?: number;
+  seatConfig?: SeatConfig | null;
 }
 
-export const ROWS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-export const SEATS_PER_ROW = 12;
+// Default config when no screen config is provided (legacy movies / system movies)
+const DEFAULT_ROWS = 8;
+const DEFAULT_SEATS_PER_ROW = 12;
+const DEFAULT_CATEGORIES: SeatCategory[] = [
+  { name: "Premium", rows: ["A", "B"], price: 350, color: "#eab308" },
+  { name: "Executive", rows: ["C", "D", "E"], price: 250, color: "#0ea5e9" },
+  { name: "Classic", rows: ["F", "G", "H"], price: 150, color: "#22c55e" },
+];
 
-export const getSeatCategory = (
-  row: string
-): { label: string; price: number; color: string } => {
-  if (["A", "B"].includes(row))
-    return { label: "PREMIUM", price: 350, color: "text-amber-400" };
-  if (["C", "D", "E"].includes(row))
-    return { label: "EXECUTIVE", price: 250, color: "text-sky-400" };
-  return { label: "CLASSIC", price: 150, color: "text-emerald-400" };
+// map category colors to tailwind text classes
+const colorToTailwind: Record<string, string> = {
+  "#eab308": "text-amber-400",
+  "#0ea5e9": "text-sky-400",
+  "#22c55e": "text-emerald-400",
+  "#8b5cf6": "text-violet-400",
+  "#ef4444": "text-red-400",
+  "#f97316": "text-orange-400",
+  "#ec4899": "text-pink-400",
+  "#06b6d4": "text-cyan-400",
 };
+function getCatColor(hex: string): string {
+  return colorToTailwind[hex?.toLowerCase()] || "text-gray-300";
+}
+
+/** Exported helper so other components can compute price for a given seat row */
+export function getSeatCategory(
+  row: string,
+  categories?: SeatCategory[],
+): { label: string; price: number; color: string } {
+  const cats = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES;
+  for (const cat of cats) {
+    if (cat.rows.includes(row)) {
+      return { label: cat.name.toUpperCase(), price: cat.price, color: getCatColor(cat.color) };
+    }
+  }
+  // fallback to last category
+  const last = cats[cats.length - 1];
+  return { label: last.name.toUpperCase(), price: last.price, color: getCatColor(last.color) };
+}
 
 const SeatLayout: React.FC<SeatLayoutProps> = ({
   movieId,
   showTime,
+  showDate,
   onSeatSelect,
   maxSelection = 10,
+  seatConfig,
 }) => {
   const [availableSeats, setAvailableSeats] = useState<string[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Memoize callback to prevent infinite loops
   const stableOnSeatSelect = useCallback(onSeatSelect, []);
+
+  const totalRows = seatConfig?.rows || DEFAULT_ROWS;
+  const seatsPerRow = seatConfig?.seatsPerRow || DEFAULT_SEATS_PER_ROW;
+  const categories = seatConfig?.categories && seatConfig.categories.length > 0
+    ? seatConfig.categories
+    : DEFAULT_CATEGORIES;
+
+  const rowLetters = useMemo(
+    () => Array.from({ length: totalRows }, (_, i) => String.fromCharCode(65 + i)),
+    [totalRows],
+  );
+
+  // compute aisle positions (roughly at 1/3 and 2/3)
+  const aisles = useMemo(() => {
+    if (seatsPerRow <= 6) return [];
+    const a1 = Math.floor(seatsPerRow / 3);
+    const a2 = Math.floor((seatsPerRow * 2) / 3);
+    return [a1, a2];
+  }, [seatsPerRow]);
 
   useEffect(() => {
     const fetchSeats = async () => {
       if (!movieId || !showTime) return;
       setLoading(true);
       try {
-        const data = await getAvailableSeats(movieId, showTime);
+        const data = await getAvailableSeats(movieId, showTime, showDate);
         setAvailableSeats(data || []);
         setSelectedSeats([]);
         stableOnSeatSelect([]);
@@ -50,7 +100,7 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
       }
     };
     fetchSeats();
-  }, [movieId, showTime, stableOnSeatSelect]);
+  }, [movieId, showTime, showDate, stableOnSeatSelect]);
 
   const handleSeatClick = (seatId: string) => {
     if (!availableSeats.includes(seatId)) return;
@@ -102,8 +152,8 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
 
       {/* Seat grid */}
       <div className="space-y-1.5 min-w-[480px]">
-        {ROWS.map((row) => {
-          const category = getSeatCategory(row);
+        {rowLetters.map((row) => {
+          const category = getSeatCategory(row, categories);
           const showLabel = category.label !== lastCategory;
           lastCategory = category.label;
 
@@ -128,9 +178,9 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
                   {row}
                 </span>
 
-                {Array.from({ length: SEATS_PER_ROW }, (_, i) => {
+                {Array.from({ length: seatsPerRow }, (_, i) => {
                   const seatId = `${row}${i + 1}`;
-                  const isAisle = i === 3 || i === 8;
+                  const isAisle = aisles.includes(i + 1);
                   return (
                     <React.Fragment key={seatId}>
                       <button

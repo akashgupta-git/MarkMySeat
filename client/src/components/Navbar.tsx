@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import Logo from "./Logo";
 
 const Navbar: React.FC = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -20,15 +21,8 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-shadow">
-              <svg viewBox="0 0 32 32" className="w-5 h-5">
-                <path d="M6 24V8l10 10 10-10v16" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="text-white font-bold text-xl tracking-tight group-hover:text-primary transition-colors duration-200">
-              MarkMySeat
-            </span>
+          <Link to="/" className="group">
+            <Logo size="md" />
           </Link>
 
           {/* Desktop Nav */}
@@ -44,6 +38,12 @@ const Navbar: React.FC = () => {
                 >
                   My Bookings
                 </Link>
+                <Link
+                  to="/profile"
+                  className="text-gray-400 hover:text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/5 transition-all duration-200"
+                >
+                  Profile
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 border border-white/5"
@@ -53,6 +53,12 @@ const Navbar: React.FC = () => {
               </>
             ) : (
               <>
+                <Link
+                  to="/theatre/login"
+                  className="text-indigo-400 hover:text-indigo-300 text-sm font-medium px-3 py-2 rounded-lg hover:bg-indigo-500/5 transition-all duration-200"
+                >
+                  For Theatres
+                </Link>
                 <Link
                   to="/login"
                   className="text-gray-400 hover:text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-white/5 transition-all duration-200"
@@ -107,6 +113,13 @@ const Navbar: React.FC = () => {
                     >
                       My Bookings
                     </Link>
+                    <Link
+                      to="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="block text-gray-400 hover:text-white text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-white/5"
+                    >
+                      Profile
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left text-gray-400 hover:text-white text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-white/5"
@@ -116,6 +129,13 @@ const Navbar: React.FC = () => {
                   </>
                 ) : (
                   <>
+                    <Link
+                      to="/theatre/login"
+                      onClick={() => setMobileOpen(false)}
+                      className="block text-indigo-400 hover:text-indigo-300 text-sm font-medium px-3 py-2.5 rounded-lg hover:bg-indigo-500/5"
+                    >
+                      For Theatres
+                    </Link>
                     <Link
                       to="/login"
                       onClick={() => setMobileOpen(false)}

@@ -55,6 +55,9 @@ router.post("/login", async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
 
+    if (user.isActive === false)
+      return res.status(403).json({ message: "Your account has been disabled. Contact support." });
+
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" });
 
     res.status(200).json({
@@ -63,6 +66,7 @@ router.post("/login", async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (err) {
@@ -81,6 +85,54 @@ router.get("/me", protect, async (req, res) => {
     res.status(200).json(user);
   } catch (err) {
     console.error("Get /me error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /profile — update user profile fields
+router.put("/profile", protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const { name, phone, avatarUrl } = req.body;
+    if (name) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+
+    await user.save();
+    const updated = await User.findById(req.user).select("-password");
+    res.status(200).json(updated);
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// PUT /change-password — verify old password, set new one
+router.put("/change-password", protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new password required" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const user = await User.findById(req.user);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Current password is incorrect" });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Change password error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

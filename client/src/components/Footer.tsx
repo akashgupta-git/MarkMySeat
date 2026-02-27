@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import Logo from "./Logo";
 
 const Footer: React.FC = () => {
   return (
@@ -7,15 +8,8 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           {/* Brand */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-              <svg viewBox="0 0 32 32" className="w-4 h-4">
-                <path d="M6 24V8l10 10 10-10v16" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="text-white font-semibold text-lg group-hover:text-primary transition-colors">
-              MarkMySeat
-            </span>
+          <Link to="/" className="group">
+            <Logo size="sm" />
           </Link>
 
           {/* Links */}

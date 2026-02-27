@@ -1,257 +1,460 @@
-# 🎟️ MarkMySeat — Full-Stack Movie Ticket Booking App
+# 🎟️ MarkMySeat — Full-Stack Movie Ticket Booking Platform
 
 ![MERN Stack](https://img.shields.io/badge/MERN-Stack-green)
-![Architecture](https://img.shields.io/badge/System--Design-Diagram-blueviolet)
-![CI/CD](https://img.shields.io/badge/Deployment-v1%20%7C%20v2-orange)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
+![Vite](https://img.shields.io/badge/Vite-5.4-646CFF)
+![Express](https://img.shields.io/badge/Express-5.1-000000)
+![MongoDB](https://img.shields.io/badge/MongoDB-8.16-47A248)
+![Razorpay](https://img.shields.io/badge/Razorpay-Integrated-0C2451)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ---
 
-**MarkMySeat** is a complete **BookMyShow-like** movie ticket booking platform built with the **MERN Stack**.  
-It supports **JWT Authentication**, **Real-Time Seat Selection**, and **Razorpay Payment Integration**.  
+**MarkMySeat** is a production-ready **BookMyShow-style** movie ticket booking platform built with the **MERN stack**. It features three separate portals — **User**, **Theatre Partner**, and **SuperAdmin** — each with dedicated authentication, dashboards, and capabilities.
 
-This project has evolved in **two major versions**:  
-- 🚀 **v1** — CI/CD with **Jenkins + AWS EC2 + Nginx + PM2**  
-- ☁️ **v2** — Cloud-Native with **Render + Netlify + MongoDB Atlas**
+The platform supports real-time interactive seat selection with configurable multi-screen layouts, food & beverage add-ons, Razorpay payment integration with server-side verification, QR-based e-tickets, and a comprehensive admin system for managing the entire ecosystem.
 
 ---
 
-## 📦 Versions Overview
+## 🌐 Live Demo
 
-| Version | Description | Tech Highlights |
-|----------|--------------|----------------|
-| **v1 (AWS CI/CD)** | Full DevOps setup with Jenkins, Nginx, and PM2 on AWS EC2 | Automated build + deploy pipeline |
-| **v2 (Cloud Deployment)** | Lightweight, fully-managed deployment using Render + Netlify | Zero-maintenance, globally accessible |
-
----
-
-## 🌐 Live Demos
-
-### 🎯 **v2 — Cloud-Native Deployment**
-- 🔗 **Frontend (Netlify):** [https://markmyseat.netlify.app](https://markmyseat.netlify.app)  
-- 🔗 **Backend (Render):** [https://markmyseat.onrender.com](https://markmyseat.onrender.com)  
-- 💾 **Database:** MongoDB Atlas  
-
-### ☁️ **v1 — Jenkins + AWS CI/CD**
-- 🔗 **Live Instance:** [http://51.21.27.2](http://51.21.27.2)  
-- 📦 Deployed using Jenkins Pipeline on AWS EC2 with Nginx & PM2
+| Environment | URL |
+|---|---|
+| Frontend (Netlify) | [https://markmyseat.netlify.app](https://markmyseat.netlify.app) |
+| Backend API (Render) | [https://markmyseat.onrender.com](https://markmyseat.onrender.com) |
+| Database | MongoDB Atlas |
 
 ---
 
-## ✨ Features
+## ✨ Features at a Glance
 
-- ✅ Secure User Authentication (JWT)
-- ✅ Dynamic Movie & Show Management
-- ✅ 🎟️ Real-Time Seat Selection (Max 8 per user)
-- ✅ Razorpay Integrated Payment Gateway
-- ✅ Payment Signature Verification
-- ✅ Booking History & Show Management
-- ✅ Responsive UI (Tailwind CSS)
-- ✅ CI/CD (v1: Jenkins, v2: Render + Netlify)
-- 🛠️ Admin Panel (Coming Soon...)
+### 🎬 User Portal
+- **Movie Discovery** — Browse now-showing movies with search and genre filters (Action, Drama, Thriller, Comedy, Sci-Fi, Romance, Crime)
+- **Interactive Seat Selection** — Real-time seat map with category-based pricing (Premium, Executive, Classic, etc.), aisle gaps, and up to 10 seats per booking
+- **Multi-Screen Support** — Each theatre has multiple screens with independent seat configurations (IMAX, Standard, Small)
+- **7-Day Date Picker** — Book shows for today through the next 7 days
+- **Food & Beverage Add-ons** — Order popcorn, drinks, combos, and meals during checkout with per-theatre menus
+- **Razorpay Payments** — Secure payment flow with server-side HMAC SHA256 signature verification
+- **E-Ticket with QR Code** — Animated success page with confetti, downloadable e-ticket, and scannable QR code
+- **Booking Management** — View booking history, see detailed e-tickets, cancel confirmed bookings
+- **Profile Management** — Edit name, phone, and change password
+- **QR Ticket Verification** — Public page for theatre staff to scan and verify tickets at entry
 
----
+### 🎭 Theatre Partner Portal
+- **Self-Registration** — Theatres register with name, email, city, address, and get instant access
+- **Dashboard with 5 Tabs:**
+  - **Overview** — Ticket revenue, food revenue, total bookings, recent activity
+  - **Movies** — Full CRUD for movie listings with screen assignment, showtimes, poster URLs, cast, genre, language, duration
+  - **Bookings** — View all theatre bookings, mark as "used" or cancel
+  - **Food Menu** — Add/remove food items with categories (Popcorn, Beverage, Snack, Combo, Meal), veg/non-veg, pricing, images
+  - **Screens** — Create and manage screens with custom seat layouts — configurable rows, seats per row, category names, row assignments, per-category pricing, and custom colors
 
-## 🛠 Tech Stack
-
-| Frontend                | Backend               | DevOps & Cloud             |
-|--------------------------|------------------------|-----------------------------|
-| React + TypeScript       | Node.js + Express       | AWS EC2, Jenkins (v1) |
-| Tailwind CSS, Axios      | MongoDB + Mongoose      | Render + Netlify (v2) |
-| React Router, Context API | JWT, bcrypt, Razorpay  | PM2, Nginx, GitHub Actions |
-
----
-
-## 📂 Folder Structure
-
-```
-
-MarkMySeat/
-├── client/                         # React frontend (TypeScript)
-│   ├── src/
-│   └── .env                        # API URL, Razorpay key
-├── server/                         # Express backend
-│   ├── controllers/, models/, routes/
-│   └── .env                        # MongoDB, JWT, Razorpay secrets
-├── docs/                           # Documentation & Diagrams
-│   └── markmyseat-architecture.png # Architecture Diagram
-├── Jenkinsfile                     # CI/CD Pipeline (v1)
-├── .gitignore
-└── README.md
-
-````
+### 🛡️ SuperAdmin Portal
+- **Hidden Access** — No UI link; accessed directly via `/admin`
+- **Dashboard with 5 Tabs:**
+  - **Overview** — System-wide stats: total users, theatres, screens, movies, bookings (active/cancelled), ticket + food revenue, new users this month
+  - **Users** — List, search, enable/disable, change roles, delete users (with self-protection)
+  - **Theatres** — Approve/suspend theatres, view screen counts, delete with cascade cleanup
+  - **Bookings** — Global bookings table with user, movie, theatre, date, seats, status, amount
+  - **Movies** — Toggle active/inactive status for any movie system-wide
 
 ---
 
-## ⚙️ Environment Variables
+## 🛠️ Tech Stack
 
-### `/client/.env`
-```env
-REACT_APP_RAZORPAY_KEY_ID=addyours
-REACT_APP_API_URL=addyours
-````
+### Frontend
 
-### `/server/.env`
+| Technology | Purpose |
+|---|---|
+| **React 18.2** | Component-based UI framework |
+| **TypeScript 5.3** | Type-safe development |
+| **Vite 5.4** | Lightning-fast build tool & HMR dev server |
+| **Tailwind CSS 3.4** | Utility-first styling with custom dark cinematic theme |
+| **Framer Motion 11.2** | Smooth page transitions, stagger animations, and micro-interactions |
+| **React Router 6.22** | Client-side routing with protected route guards |
+| **Axios 1.7** | HTTP client with interceptors |
+| **Context API** | Three separate auth contexts (User, Theatre, Admin) |
 
-```env
-PORT=8080
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=supersecurejwtkey
-RAZORPAY_KEY_ID=addyours
-RAZORPAY_KEY_SECRET=addyours
-```
+### Backend
 
----
+| Technology | Purpose |
+|---|---|
+| **Node.js** | JavaScript runtime |
+| **Express 5.1** | HTTP server framework |
+| **MongoDB** | NoSQL document database |
+| **Mongoose 8.16** | MongoDB ODM with schemas, indexes, and population |
+| **JWT** (`jsonwebtoken` 9.0) | Stateless authentication tokens |
+| **bcryptjs 3.0** | Password hashing with salt rounds |
+| **Razorpay SDK 2.9** | Payment order creation & signature verification |
 
-## 🧑‍💻 Local Development Setup
+### DevOps & Deployment
 
-### 1️⃣ Clone the Repository
-
-```bash
-git clone https://github.com/akashgupta-git/MarkMySeat.git
-cd MarkMySeat
-```
-
-### 2️⃣ Install Dependencies
-
-```bash
-# Frontend
-cd client
-npm install
-
-# Backend
-cd ../server
-npm install
-```
-
-### 3️⃣ Setup Environment Variables
-
-Create `.env` files in both `client/` and `server/` as shown above.
-
-### 4️⃣ Run Locally
-
-```bash
-# Backend
-cd server
-npm start
-
-# Frontend
-cd ../client
-npm start
-```
-
-App runs at:
-
-* 🌐 Frontend → [http://localhost:3000](http://localhost:3000)
-* ⚙️ Backend → [http://localhost:8080](http://localhost:8080)
-
----
-
-## ☁️ Deployment Details
-
-### 🚀 **Version 1: Jenkins + AWS EC2 (DevOps-Oriented)**
-
-* CI/CD pipeline built using Jenkins
-* Webhook triggers build on every Git push
-* Jenkins pulls latest code, builds frontend, restarts backend via PM2
-* Nginx reverse-proxies requests to backend
-* MongoDB Atlas serves as remote database
-
-#### 🔧 Stack
-
-* Jenkins (CI/CD Automation)
-* AWS EC2 (Compute Instance)
-* PM2 (Backend Process Manager)
-* Nginx (Reverse Proxy)
-* MongoDB Atlas (Cloud DB)
-
----
-
-### ☁️ **Version 2: Render + Netlify (Cloud-Native)**
-
-* Render hosts backend Node.js server + MongoDB connection
-* Netlify hosts React frontend globally via CDN
-* Auto deploys on every GitHub commit (CI/CD)
-* Environment variables managed securely on both platforms
-* HTTPS + Auto Scaling + Zero Maintenance
-
-#### 🔧 Stack
-
-* Render (Backend + API Hosting)
-* MongoDB Atlas (Cloud Database)
-* Netlify (Frontend Hosting)
-* Razorpay (Payment Gateway)
-* GitHub (Source & Deployment Trigger)
-
----
-
-## 💳 Razorpay Payment Integration
-
-* 🔹 Razorpay Order generated via backend API
-* 🔹 Frontend initiates secure payment flow
-* 🔹 Backend verifies payment signature using HMAC SHA256
-* 🔹 Successful transactions create a booking record in MongoDB
+| Technology | Purpose |
+|---|---|
+| **Netlify** | Frontend hosting with CDN & auto-deploy |
+| **Render** | Backend hosting with auto-deploy |
+| **MongoDB Atlas** | Cloud-hosted database cluster |
+| **Concurrently** | Run server + client in parallel during development |
+| **Nodemon** | Auto-restart server on file changes |
 
 ---
 
 ## 🏗️ System Architecture
 
-### 🔹 **Version 1 (Jenkins + AWS + Nginx + PM2)**
-
-![v1 Architecture](docs/markmyseat_architecture_v1.png)
-
-**Flow:**
-
-1. Jenkins CI/CD pulls and builds project on EC2
-2. PM2 runs backend; Nginx serves frontend + proxies backend
-3. MongoDB Atlas handles data persistence
-4. Razorpay manages secure payments
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT (React + Vite)                    │
+│                                                                  │
+│  ┌──────────┐  ┌──────────────┐  ┌──────────────────────────┐   │
+│  │ User     │  │ Theatre      │  │ Admin                    │   │
+│  │ Portal   │  │ Portal       │  │ Portal                   │   │
+│  │          │  │              │  │                          │   │
+│  │ • Browse │  │ • Movies     │  │ • Users management       │   │
+│  │ • Book   │  │ • Screens    │  │ • Theatres management    │   │
+│  │ • Pay    │  │ • Bookings   │  │ • Bookings overview      │   │
+│  │ • E-Ticket│  │ • Food menu │  │ • Movies management      │   │
+│  └────┬─────┘  └──────┬──────┘  └───────────┬──────────────┘   │
+│       │                │                      │                  │
+│  AuthContext     TheatreContext          AdminContext             │
+└───────┼────────────────┼──────────────────────┼──────────────────┘
+        │                │                      │
+        ▼                ▼                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      EXPRESS API SERVER                           │
+│                                                                  │
+│  /api/auth          – User register, login, profile              │
+│  /api/movies        – Movie CRUD, listing, filtering             │
+│  /api/bookings      – Create, list, cancel, verify bookings      │
+│  /api/payment       – Razorpay order creation & verification     │
+│  /api/theatre/auth  – Theatre register & login                   │
+│  /api/theatre       – Theatre dashboard, screens, food, stats    │
+│  /api/food          – Food menu (global + per-theatre)           │
+│  /api/admin         – SuperAdmin auth, stats, CRUD operations    │
+│  /api/health        – Health check endpoint                      │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     MONGODB ATLAS                                │
+│                                                                  │
+│  Collections: User, Theatre, Screen, Movie, Booking,             │
+│               SeatMap, FoodItem, Payment                         │
+│                                                                  │
+│  • SeatMap: per movie + screen + date + time (unique index)      │
+│  • Screen: per theatre with custom seat categories               │
+│  • Booking: references User, Movie, Theatre, Screen, FoodItem    │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-### 🔹 **Version 2 (Render + Netlify + MongoDB Atlas)**
+## 📂 Project Structure
 
-![v2 Architecture](docs/markmyseat_architecture_v2.png)
-
-**Flow:**
-
-1. User accesses frontend on **Netlify**
-2. Frontend sends API requests to **Render backend**
-3. Backend connects securely to **MongoDB Atlas**
-4. Payments handled by **Razorpay SDK**
-5. Continuous deployments triggered via **GitHub commits**
+```
+MarkMySeat/
+├── package.json                    # Root scripts (dev, seed, build)
+│
+├── client/                         # React + TypeScript frontend
+│   ├── src/
+│   │   ├── api/                    # API client modules
+│   │   │   ├── auth.ts             # User auth API
+│   │   │   ├── bookings.ts         # Booking CRUD API
+│   │   │   ├── movies.ts           # Movie listing API
+│   │   │   └── admin.ts            # Admin API client
+│   │   ├── components/
+│   │   │   ├── Navbar.tsx           # Top nav with auth-aware links
+│   │   │   ├── Footer.tsx           # Footer with branding
+│   │   │   ├── Logo.tsx             # Reusable logo component (4 sizes)
+│   │   │   ├── SeatLayout.tsx       # Interactive seat map renderer
+│   │   │   ├── MovieCard.tsx        # Movie poster card with hover CTA
+│   │   │   ├── ProtectedRoute.tsx   # User auth guard
+│   │   │   ├── TheatreProtectedRoute.tsx
+│   │   │   └── AdminProtectedRoute.tsx
+│   │   ├── context/
+│   │   │   ├── AuthContext.tsx       # User authentication state
+│   │   │   ├── TheatreContext.tsx    # Theatre authentication state
+│   │   │   └── AdminContext.tsx      # Admin authentication state
+│   │   ├── pages/
+│   │   │   ├── HomePage.tsx          # Movie discovery + search + filters
+│   │   │   ├── BookingPage.tsx       # Date/time/seat selection
+│   │   │   ├── ConfirmBooking.tsx    # Summary + food add-ons + payment
+│   │   │   ├── SuccessPage.tsx       # Confetti + e-ticket + QR
+│   │   │   ├── BookingHistory.tsx    # All user bookings list
+│   │   │   ├── BookingDetail.tsx     # Single booking e-ticket view
+│   │   │   ├── ProfilePage.tsx       # Edit profile + change password
+│   │   │   ├── VerifyBookingPage.tsx # QR ticket verification (public)
+│   │   │   ├── LoginPage.tsx         # User login
+│   │   │   ├── RegisterPage.tsx      # User registration
+│   │   │   ├── TheatreLogin.tsx      # Theatre partner login
+│   │   │   ├── TheatreRegister.tsx   # Theatre partner registration
+│   │   │   ├── TheatreDashboard.tsx  # Theatre management (5 tabs)
+│   │   │   ├── AdminLogin.tsx        # SuperAdmin login
+│   │   │   └── AdminDashboard.tsx    # SuperAdmin panel (5 tabs)
+│   │   ├── types/                   # TypeScript type definitions
+│   │   ├── utils/                   # Axios instance, helpers, Razorpay loader
+│   │   ├── App.tsx                  # Route definitions
+│   │   └── main.tsx                 # Entry point with providers
+│   ├── public/
+│   │   └── favicon.svg
+│   ├── tailwind.config.js
+│   ├── vite.config.ts
+│   └── tsconfig.json
+│
+├── server/                          # Node.js + Express backend
+│   ├── server.js                    # Express app setup + route mounting
+│   ├── config/
+│   │   ├── db.js                    # MongoDB connection helper
+│   │   └── razorpay.js              # Razorpay instance config
+│   ├── middleware/
+│   │   ├── authMiddleware.js        # JWT verification (user)
+│   │   └── adminMiddleware.js       # JWT verification (admin role)
+│   ├── models/
+│   │   ├── User.js                  # name, email, password, role, isActive
+│   │   ├── Theatre.js               # name, email, city, screens, seatConfig, isApproved
+│   │   ├── Screen.js                # theatre ref, name, number, seatConfig with categories
+│   │   ├── Movie.js                 # title, poster, genre, showtimes, theatre/screen refs
+│   │   ├── Booking.js               # user, movie, seats, food orders, payment, status
+│   │   ├── SeatMap.js               # per movie+screen+date+time seat availability map
+│   │   ├── FoodItem.js              # name, price, category, veg, theatre ref
+│   │   └── Payment.js               # Razorpay order/payment IDs, amount, signature
+│   ├── controllers/
+│   │   ├── authController.js        # Register, login, profile
+│   │   ├── bookingController.js     # Create, list, cancel, verify bookings
+│   │   └── paymentController.js     # Razorpay order + verification
+│   ├── routes/
+│   │   ├── auth.js                  # User auth routes
+│   │   ├── bookingRoutes.js         # Booking CRUD routes
+│   │   ├── movieRoutes.js           # Movie listing + CRUD
+│   │   ├── paymentRoutes.js         # Payment routes
+│   │   ├── theatreAuth.js           # Theatre register/login
+│   │   ├── theatreRoutes.js         # Theatre dashboard API
+│   │   ├── foodRoutes.js            # Food menu routes
+│   │   ├── showRoutes.js            # Show management
+│   │   └── adminRoutes.js           # SuperAdmin API (stats, CRUD)
+│   └── seed/
+│       ├── seed.js                  # Comprehensive test data seeder
+│       └── movie.js                 # Legacy movie seeder
+│
+└── docs/                            # Architecture diagrams
+```
 
 ---
 
-## 🔐 Security Features
+## 🔄 How It Works
 
-* 🔒 Passwords hashed using bcrypt
-* 🔑 JWT-based Authentication
-* 💳 Razorpay Signature Verification
-* ⚙️ CORS Protection for allowed domains
-* 🧩 Secrets managed via `.env` (ignored in `.gitignore`)
-* 🧠 GitGuardian active for key leak prevention
+### Booking Flow
+
+```
+User browses movies → Selects movie → Picks date & showtime
+    → Interactive seat map loads (real-time availability from SeatMap collection)
+    → Selects seats (color-coded by category with pricing)
+    → Proceeds to confirm → Adds food/beverages (optional)
+    → Price breakdown shown (seats + food + total)
+    → Initiates Razorpay payment
+    → Backend creates Razorpay order → Frontend opens checkout modal
+    → On payment success → Backend verifies signature (HMAC SHA256)
+    → Seats marked as booked in SeatMap → Booking record created
+    → Payment record saved → Success page with confetti + QR e-ticket
+```
+
+### Authentication Architecture
+
+The app uses **three independent JWT authentication flows**, each with its own token, context, and protected routes:
+
+| Portal | Token Key | Context | Guard Component | Login Route |
+|---|---|---|---|---|
+| User | `token` | `AuthContext` | `ProtectedRoute` | `/login` |
+| Theatre | `theatreToken` | `TheatreContext` | `TheatreProtectedRoute` | `/theatre/login` |
+| Admin | `adminToken` | `AdminContext` | `AdminProtectedRoute` | `/admin` |
+
+Each token is stored in `localStorage` and auto-verified on page load via the respective context provider.
+
+### Seat Map System
+
+Seat availability is tracked per **movie + screen + date + showtime** combination using the `SeatMap` collection with a unique compound index. Each seat map is a `Map<string, { booked: boolean, user: ObjectId }>` where keys are seat identifiers like `"A1"`, `"B5"`, etc.
+
+Screens support fully configurable layouts:
+- **Rows & seats per row** — e.g., 12 rows × 16 seats for IMAX, 6 × 10 for small screens
+- **Categories** — Each category defines a name, assigned rows, price, and display color
+- **Aisle gaps** — Automatically rendered at 1/3 and 2/3 positions
 
 ---
 
-## 🧱 Architecture Highlights
+## 🧑‍💻 Local Development Setup
 
-* Modular MVC backend structure
-* Protected routes via JWT middleware
-* Context API for authentication in React
-* Tailwind-based responsive UI
-* CI/CD automation (v1) + Cloud-native auto-deploy (v2)
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/akashgupta-git/MarkMySeat.git
+cd MarkMySeat
+npm run install:all
+```
+
+### 2. Configure Environment
+
+Create `.env` files in both `client/` and `server/` directories with the required variables (MongoDB URI, JWT secret, Razorpay keys, API URL).
+
+### 3. Seed Test Data
+
+```bash
+npm run seed
+```
+
+This populates the database with:
+- **1 SuperAdmin** + **5 test users**
+- **3 theatres** (PVR Mumbai, INOX Delhi, Cinepolis Bangalore) with **9 screens**
+- **20 movies** with real poster URLs, genres, cast details
+- **21 food items** (14 global + 7 theatre-specific)
+- **15 sample bookings** (confirmed, used, cancelled) with food orders and seat maps
+- **13 payment records**
+
+### 4. Run Development Servers
+
+```bash
+npm run dev
+```
+
+This starts both servers concurrently:
+- **Frontend** → [http://localhost:3000](http://localhost:3000) (Vite dev server with HMR)
+- **Backend** → [http://localhost:8080](http://localhost:8080) (Express with Nodemon)
+
+The Vite dev server proxies `/api` requests to the backend automatically.
+
+### Test Accounts (after seeding)
+
+| Role | Email | Password |
+|---|---|---|
+| SuperAdmin | `admin@markmyseat.com` | `admin123` |
+| User | `rahul@test.com` | `test123` |
+| User | `priya@test.com` | `test123` |
+| User | `amit@test.com` | `test123` |
+| Theatre (PVR) | `pvr@theatre.com` | `theatre123` |
+| Theatre (INOX) | `inox@theatre.com` | `theatre123` |
+| Theatre (Cinepolis) | `cinepolis@theatre.com` | `theatre123` |
 
 ---
 
-## 🧠 Future Enhancements
+## 🎨 UI & Design
 
-* 🛠️ Admin Dashboard for Movies/Shows
-* 📩 Email Confirmation after Booking
-* 🎫 PDF Ticket Generation
-* 📊 Analytics Dashboard for Admin
-* 💬 Real-Time Chat Support
-* 🔔 Push Notifications
+The frontend uses a **dark cinematic theme** designed for an immersive movie-booking experience:
+
+| Element | Value |
+|---|---|
+| Background | `#0a0a1a` (deep navy black) |
+| Card Background | `#161630` with glassmorphism effects |
+| Primary Accent | `#dc354f` (cinema red) |
+| Secondary Accent | `#06b6d4` (cyan) |
+| Theatre Portal | Indigo-600 theme |
+| Admin Portal | Emerald-600 theme |
+| Effects | Glassmorphism (`.glass`, `.glass-strong`), gradient text, card glow, stagger animations |
+
+All pages feature **Framer Motion** animations — page transitions, stagger-loaded cards, animated modals, and confetti on booking success.
+
+---
+
+## 💳 Payment Integration
+
+Razorpay is integrated end-to-end:
+
+1. **Order Creation** — Backend creates a Razorpay order with the booking amount
+2. **Checkout Modal** — Frontend dynamically loads Razorpay script and opens the checkout UI
+3. **Signature Verification** — Backend verifies the payment signature using HMAC SHA256 (`razorpay_order_id | razorpay_payment_id`)
+4. **Booking Confirmation** — On successful verification, seats are locked in `SeatMap`, a `Booking` record is created, and a `Payment` record is saved
+5. **Failure Handling** — Graceful error states for dismissed payments, network failures, and verification mismatches
+
+---
+
+## 🔐 Security
+
+- **Password Hashing** — bcryptjs with 10 salt rounds
+- **JWT Authentication** — Stateless tokens with role-based payloads (`{ id, role }`)
+- **Payment Verification** — Server-side HMAC SHA256 signature validation
+- **CORS Protection** — Whitelist-only origin policy
+- **Admin Self-Protection** — Admins cannot disable or delete their own account
+- **User Account Control** — Disabled users receive `403 Forbidden` on login attempts
+- **Theatre Approval Flow** — Theatres can be approved/suspended by admin
+- **Secrets Management** — All credentials in `.env` files (git-ignored)
+
+---
+
+## 📡 API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | Public | Register new user |
+| POST | `/api/auth/login` | Public | Login (returns JWT) |
+| GET | `/api/auth/me` | User | Get current user profile |
+| PUT | `/api/auth/profile` | User | Update profile |
+| PUT | `/api/auth/change-password` | User | Change password |
+| GET | `/api/movies/all` | Public | List active movies (optional city filter) |
+| GET | `/api/movies/:id` | Public | Get single movie details |
+| POST | `/api/bookings/create` | User | Create booking + lock seats |
+| GET | `/api/bookings/my` | User | Get user's bookings |
+| GET | `/api/bookings/:id` | User | Get booking detail |
+| PUT | `/api/bookings/:id/cancel` | User | Cancel booking |
+| GET | `/api/bookings/verify/:bookingId` | Public | Verify ticket via QR |
+| POST | `/api/payment/create-order` | User | Create Razorpay order |
+| POST | `/api/payment/verify` | User | Verify payment signature |
+| POST | `/api/theatre/auth/register` | Public | Register theatre |
+| POST | `/api/theatre/auth/login` | Public | Theatre login |
+| GET | `/api/theatre/dashboard` | Theatre | Theatre stats |
+| GET/POST/PUT/DELETE | `/api/theatre/movies` | Theatre | Movie CRUD |
+| GET/POST/DELETE | `/api/theatre/screens` | Theatre | Screen management |
+| GET/POST/DELETE | `/api/theatre/food` | Theatre | Food menu management |
+| GET | `/api/food/menu` | Public | Get food menu (optional theatreId) |
+| POST | `/api/admin/login` | Public | Admin login |
+| GET | `/api/admin/stats` | Admin | System-wide statistics |
+| GET/PUT/DELETE | `/api/admin/users` | Admin | User management |
+| GET/PUT/DELETE | `/api/admin/theatres` | Admin | Theatre management |
+| GET/PUT | `/api/admin/bookings` | Admin | Booking management |
+| GET/PUT | `/api/admin/movies` | Admin | Movie management |
+| GET | `/api/health` | Public | Server health check |
+
+---
+
+## ☁️ Deployment
+
+### Cloud-Native (Current — v2)
+
+| Service | Platform | Auto-Deploy |
+|---|---|---|
+| Frontend | Netlify | On git push to `main` |
+| Backend | Render | On git push to `main` |
+| Database | MongoDB Atlas | Always-on cluster |
+
+### Jenkins + AWS EC2 (Legacy — v1)
+
+The v1 deployment used a Jenkins CI/CD pipeline on AWS EC2 with Nginx as reverse proxy and PM2 for process management. See `docs/` for architecture diagrams.
+
+---
+
+## 🗄️ Database Schema
+
+```
+User          Theatre         Screen          Movie
+├─ name       ├─ name         ├─ theatre →    ├─ title
+├─ email      ├─ email        ├─ name         ├─ posterUrl
+├─ password   ├─ password     ├─ screenNumber ├─ genre, language
+├─ phone      ├─ city         ├─ seatConfig   ├─ showTimes[]
+├─ role       ├─ address        ├─ rows       ├─ theatre →
+├─ isActive   ├─ screens        ├─ seatsPerRow├─ screen →
+              ├─ seatConfig     └─ categories[]├─ isActive
+              └─ isApproved       ├─ name
+                                  ├─ rows[]
+Booking       SeatMap             ├─ price
+├─ bookingId  ├─ movie →         └─ color
+├─ user →     ├─ screen →
+├─ movie →    ├─ showDate     FoodItem       Payment
+├─ theatre →  ├─ showTime     ├─ name        ├─ razorpay_order_id
+├─ screen →   └─ seats (Map)  ├─ price       ├─ razorpay_payment_id
+├─ showDate                   ├─ category    ├─ razorpay_signature
+├─ showTime                   ├─ imageUrl    ├─ amount
+├─ seatNumbers[]              ├─ isVeg       ├─ currency
+├─ foodOrders[]               ├─ theatre →   └─ userEmail
+├─ totalPrice                 └─ isAvailable
+├─ paymentId
+└─ status
+```
 
 ---
 
@@ -272,8 +475,8 @@ This project is licensed under the **MIT License**.
 
 ## 🙌 Show Your Support
 
-⭐ Star this repo to support the project
+⭐ Star this repo if you found it useful!
 🛠️ Fork it to build your own version
-📩 PRs are welcome to enhance features!
+📩 Pull requests are welcome
 
 ---

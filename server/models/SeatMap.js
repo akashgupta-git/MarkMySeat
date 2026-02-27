@@ -6,6 +6,15 @@ const seatMapSchema = new mongoose.Schema({
     ref: "Movie",
     required: true,
   },
+  screen: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Screen",
+    default: null,
+  },
+  showDate: {
+    type: String,
+    default: "",
+  },
   showTime: {
     type: String,
     required: true,
@@ -20,6 +29,7 @@ const seatMapSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-seatMapSchema.index({ movie: 1, showTime: 1 }, { unique: true });
+// Unique per movie + screen + date + time combo
+seatMapSchema.index({ movie: 1, screen: 1, showDate: 1, showTime: 1 }, { unique: true });
 
 module.exports = mongoose.model("SeatMap", seatMapSchema);

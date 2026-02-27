@@ -1,18 +1,40 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getMovieById, Movie } from "../api/movies";
 import SeatLayout, { getSeatCategory } from "../components/SeatLayout";
 import { motion } from "framer-motion";
 
-const SHOW_TIMES = ["10:00 AM", "1:30 PM", "5:00 PM", "9:00 PM"];
+const DEFAULT_SHOW_TIMES = ["10:00 AM", "1:30 PM", "5:00 PM", "9:00 PM"];
+
+/** Produce next 7 dates starting today */
+function upcomingDates(count = 7): { label: string; value: string }[] {
+  const dates: { label: string; value: string }[] = [];
+  const now = new Date();
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    const iso = d.toISOString().slice(0, 10); // YYYY-MM-DD
+    const label =
+      i === 0
+        ? "Today"
+        : i === 1
+        ? "Tomorrow"
+        : d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+    dates.push({ label, value: iso });
+  }
+  return dates;
+}
 
 const BookingPage: React.FC = () => {
   const { movieId } = useParams<{ movieId: string }>();
   const navigate = useNavigate();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTime, setSelectedTime] = useState(SHOW_TIMES[0]);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedTime, setSelectedTime] = useState("");
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+
+  const dates = useMemo(() => upcomingDates(7), []);
 
   useEffect(() => {
     const fetchMovie = async () => {
@@ -20,6 +42,9 @@ const BookingPage: React.FC = () => {
       try {
         const data = await getMovieById(movieId);
         setMovie(data);
+        // auto-select first show time
+        const times = data.showTimes?.length ? data.showTimes : DEFAULT_SHOW_TIMES;
+        setSelectedTime(times[0]);
       } catch (err) {
         console.error("Failed to load movie:", err);
       } finally {
@@ -29,8 +54,12 @@ const BookingPage: React.FC = () => {
     fetchMovie();
   }, [movieId]);
 
+  const showTimes = movie?.showTimes?.length ? movie.showTimes : DEFAULT_SHOW_TIMES;
+  const seatConfig = movie?.screen?.seatConfig || movie?.theatre?.seatConfig || undefined;
+  const categories = seatConfig?.categories;
+
   const totalPrice = selectedSeats.reduce((sum, seat) => {
-    return sum + getSeatCategory(seat.charAt(0)).price;
+    return sum + getSeatCategory(seat.charAt(0), categories).price;
   }, 0);
 
   const handleBookNow = () => {
@@ -42,7 +71,11 @@ const BookingPage: React.FC = () => {
         posterUrl: movie.posterUrl,
         seatNumbers: selectedSeats,
         showTime: selectedTime,
+        showDate: selectedDate,
         totalPrice,
+        theatreId: movie.theatre?._id,
+        screenName: movie.screen?.name || "",
+        seatConfig: seatConfig || null,
       },
     });
   };
@@ -136,13 +169,50 @@ const BookingPage: React.FC = () => {
 
       {/* Showtime + Seat Selection */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-6">
+        {/* Screen info */}
+        {movie.screen && (
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/20">
+              {movie.screen.name || `Screen ${movie.screen.screenNumber}`}
+            </span>
+            {movie.theatre?.name && (
+              <span className="text-xs text-gray-500">{movie.theatre.name}</span>
+            )}
+          </div>
+        )}
+
+        {/* Date Picker */}
+        <div className="mb-5">
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Select Date
+          </h3>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {dates.map((d) => (
+              <button
+                key={d.value}
+                onClick={() => {
+                  setSelectedDate(d.value);
+                  setSelectedSeats([]);
+                }}
+                className={`flex flex-col items-center px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                  selectedDate === d.value
+                    ? "bg-primary text-white shadow-lg shadow-primary/25"
+                    : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5"
+                }`}
+              >
+                <span className="text-xs">{d.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Show Times */}
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
             Select Showtime
           </h3>
           <div className="flex flex-wrap gap-2">
-            {SHOW_TIMES.map((time) => (
+            {showTimes.map((time) => (
               <button
                 key={time}
                 onClick={() => {
@@ -165,7 +235,9 @@ const BookingPage: React.FC = () => {
         <SeatLayout
           movieId={movie._id}
           showTime={selectedTime}
+          showDate={selectedDate}
           onSeatSelect={setSelectedSeats}
+          seatConfig={seatConfig}
         />
       </div>
 

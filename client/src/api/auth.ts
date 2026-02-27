@@ -42,3 +42,15 @@ export const verifyToken = async (): Promise<User | null> => {
     return null;
   }
 };
+
+// update user profile
+export const updateProfile = async (data: { name?: string; phone?: string; avatarUrl?: string }): Promise<User> => {
+  const response = await api.put("/auth/profile", data);
+  return response.data;
+};
+
+// change password
+export const changePassword = async (data: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
+  const response = await api.put("/auth/change-password", data);
+  return response.data;
+};
