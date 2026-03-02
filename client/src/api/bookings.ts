@@ -6,15 +6,63 @@ export const getAvailableSeats = async (
   movieId: string,
   showTime: string,
   showDate?: string,
-): Promise<string[]> => {
+): Promise<{ availableSeats: string[]; lockedSeats: string[] }> => {
   try {
     const response = await api.get("/bookings/available-seats", {
       params: { movieId, showTime, showDate },
     });
-    return response.data.availableSeats || [];
+    return {
+      availableSeats: response.data.availableSeats || [],
+      lockedSeats: response.data.lockedSeats || [],
+    };
   } catch (error) {
     console.error("Error fetching available seats:", error);
     throw new Error("Could not fetch seats.");
+  }
+};
+
+// lock seats in Redis while user completes payment
+export const lockSeats = async (
+  movieId: string,
+  seatNumbers: string[],
+  showTime: string,
+  showDate?: string,
+): Promise<{ locked: boolean; conflicting?: string[] }> => {
+  try {
+    const response = await api.post("/bookings/lock-seats", {
+      movieId,
+      seatNumbers,
+      showTime,
+      showDate,
+    });
+    return { locked: true };
+  } catch (error: any) {
+    if (error.response?.status === 409) {
+      return {
+        locked: false,
+        conflicting: error.response.data.conflicting || [],
+      };
+    }
+    throw new Error(error.response?.data?.message || "Failed to reserve seats.");
+  }
+};
+
+// release seats if user abandons payment
+export const unlockSeats = async (
+  movieId: string,
+  seatNumbers: string[],
+  showTime: string,
+  showDate?: string,
+): Promise<void> => {
+  try {
+    await api.post("/bookings/unlock-seats", {
+      movieId,
+      seatNumbers,
+      showTime,
+      showDate,
+    });
+  } catch {
+    // best-effort release — locks will expire via TTL anyway
   }
 };
 

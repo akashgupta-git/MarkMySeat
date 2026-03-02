@@ -60,6 +60,7 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   seatConfig,
 }) => {
   const [availableSeats, setAvailableSeats] = useState<string[]>([]);
+  const [lockedSeats, setLockedSeats] = useState<string[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,7 +91,8 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
       setLoading(true);
       try {
         const data = await getAvailableSeats(movieId, showTime, showDate);
-        setAvailableSeats(data || []);
+        setAvailableSeats(data.availableSeats || []);
+        setLockedSeats(data.lockedSeats || []);
         setSelectedSeats([]);
         stableOnSeatSelect([]);
       } catch (err) {
@@ -103,7 +105,7 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   }, [movieId, showTime, showDate, stableOnSeatSelect]);
 
   const handleSeatClick = (seatId: string) => {
-    if (!availableSeats.includes(seatId)) return;
+    if (!availableSeats.includes(seatId) || lockedSeats.includes(seatId)) return;
 
     let newSelected: string[];
     if (selectedSeats.includes(seatId)) {
@@ -122,6 +124,9 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
 
     if (selectedSeats.includes(seatId)) {
       return `${base} bg-emerald-500 border-emerald-400 text-white scale-105 shadow-lg shadow-emerald-500/30 cursor-pointer`;
+    }
+    if (lockedSeats.includes(seatId)) {
+      return `${base} bg-amber-600/40 border-amber-500/50 text-amber-400/60 cursor-not-allowed`;
     }
     if (!availableSeats.includes(seatId)) {
       return `${base} bg-gray-700/60 border-gray-700/60 text-gray-600 cursor-not-allowed`;
@@ -186,8 +191,8 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
                       <button
                         onClick={() => handleSeatClick(seatId)}
                         className={getSeatClasses(seatId)}
-                        disabled={!availableSeats.includes(seatId)}
-                        title={`${seatId} — ₹${category.price}`}
+                        disabled={!availableSeats.includes(seatId) || lockedSeats.includes(seatId)}
+                        title={lockedSeats.includes(seatId) ? `${seatId} — Held by another user` : `${seatId} — ₹${category.price}`}
                       >
                         {i + 1}
                       </button>
@@ -214,6 +219,10 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-t-md bg-emerald-500 border-2 border-emerald-400" />
           <span className="text-xs text-gray-400">Selected</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-t-md bg-amber-600/40 border-2 border-amber-500/50" />
+          <span className="text-xs text-gray-400">Held</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-t-md bg-gray-700/60 border-2 border-gray-700/60" />

@@ -16,6 +16,10 @@ const theatreRoutes = require("./routes/theatreRoutes");
 const foodRoutes = require("./routes/foodRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
+// concurrency infrastructure
+const { getRedis, isRedisReady } = require("./config/redis");
+const { initBookingQueue } = require("./services/bookingQueue");
+
 const app = express();
 
 // only allow our frontend origins (netlify prod + local dev)
@@ -89,7 +93,22 @@ app.get("/", (req, res) => {
 // connect to mongo
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
+  .then(() => {
+    console.log("MongoDB connected");
+
+    // initialise Redis (starts connecting in background)
+    const redis = getRedis();
+    if (redis) {
+      // Wait for Redis to be ready, then init BullMQ
+      redis.on("ready", () => {
+        initBookingQueue(bookingRoutes._processBooking);
+      });
+      // If already ready (unlikely but safe)
+      if (isRedisReady()) {
+        initBookingQueue(bookingRoutes._processBooking);
+      }
+    }
+  })
   .catch((err) => console.error("MongoDB connection failed:", err.message));
 
 const PORT = process.env.PORT || 8080;

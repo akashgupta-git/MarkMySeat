@@ -1,6 +1,6 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { createBooking } from "../api/bookings";
+import { createBooking, lockSeats, unlockSeats } from "../api/bookings";
 import { createPaymentOrder, verifyPayment } from "../api/payment";
 import { AuthContext } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -37,12 +37,70 @@ const ConfirmBooking: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("");
+  const [seatsLocked, setSeatsLocked] = useState(false);
+  const lockAttempted = useRef(false);
 
   // Food add-on state
   const [foodMenu, setFoodMenu] = useState<FoodItem[]>([]);
   const [foodCart, setFoodCart] = useState<Record<string, number>>({});
   const [showFood, setShowFood] = useState(false);
   const [foodLoading, setFoodLoading] = useState(false);
+
+  // Lock seats in Redis as soon as user lands on this page
+  useEffect(() => {
+    if (!bookingData || lockAttempted.current) return;
+    lockAttempted.current = true;
+
+    const acquireLock = async () => {
+      try {
+        const result = await lockSeats(
+          bookingData.movieId,
+          bookingData.seatNumbers,
+          bookingData.showTime,
+          bookingData.showDate,
+        );
+        if (result.locked) {
+          setSeatsLocked(true);
+        } else {
+          setError(
+            `Some seats were just taken by another user: ${result.conflicting?.join(", ")}. Please go back and pick different seats.`
+          );
+        }
+      } catch (err: any) {
+        // Non-critical — Redis might be unavailable, booking will still work via DB check
+        console.warn("Seat lock failed (non-critical):", err.message);
+        setSeatsLocked(true); // proceed anyway — DB transaction is the safety net
+      }
+    };
+    acquireLock();
+  }, [bookingData]);
+
+  // Release seats if user navigates away without completing booking
+  useEffect(() => {
+    if (!bookingData) return;
+
+    const releaseLock = () => {
+      if (seatsLocked) {
+        unlockSeats(
+          bookingData.movieId,
+          bookingData.seatNumbers,
+          bookingData.showTime,
+          bookingData.showDate,
+        );
+      }
+    };
+
+    // Handle browser tab close / navigation
+    window.addEventListener("beforeunload", releaseLock);
+
+    return () => {
+      window.removeEventListener("beforeunload", releaseLock);
+      // Component unmount — release unless booking succeeded (navigated to /success)
+      if (seatsLocked && !window.location.pathname.includes("/success")) {
+        releaseLock();
+      }
+    };
+  }, [bookingData, seatsLocked]);
 
   useEffect(() => {
     const loadFood = async () => {
@@ -142,6 +200,8 @@ const ConfirmBooking: React.FC = () => {
             if (verification.success) {
               setStatus("Confirming your seats...");
               const result = await createBooking(movieId, seatNumbers, showTime, grandTotal, verification.paymentId, foodOrders.length > 0 ? foodOrders : undefined, foodTotal || undefined, showDate);
+              // Booking succeeded — prevent cleanup from releasing locks
+              setSeatsLocked(false);
               navigate("/success", {
                 state: {
                   bookingId: result.booking?.bookingId || "",
