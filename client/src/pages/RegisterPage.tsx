@@ -3,41 +3,49 @@ import { useNavigate, Link } from "react-router-dom";
 import { registerUser } from "../api/auth";
 import { AuthContext } from "../context/AuthContext";
 import { motion } from "framer-motion";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, UserIcon } from "lucide-react";
+import { toast } from "sonner";
 
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const { setUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
     if (!name || !email || !password) {
-      setError("All fields are required.");
-      setLoading(false);
+      toast.error("All fields are required.");
       return;
     }
-
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    setLoading(true);
     try {
       const { user } = await registerUser({ name, email, password });
       setUser(user);
+      toast.success("Account created! Welcome aboard.");
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Failed to register.");
+      toast.error(err.message || "Failed to register.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Password strength
+  const pwStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
+  const pwColors = ["", "bg-red-500", "bg-amber-500", "bg-emerald-500"];
+  const pwLabels = ["", "Weak", "Good", "Strong"];
+
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-4 relative">
-      {/* Background gradient mesh */}
+      {/* Background */}
       <div className="absolute inset-0 hero-gradient pointer-events-none" />
       <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-primary/5 rounded-full blur-[120px]" />
       <div className="absolute bottom-1/3 left-1/4 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px]" />
@@ -62,58 +70,88 @@ const RegisterPage: React.FC = () => {
         </div>
 
         {/* Form Card */}
-        <div className="glass-strong rounded-2xl p-7 sm:p-8">
+        <div className="glass-card rounded-2xl p-7 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
                 Full Name
               </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
-                required
-              />
+              <div className="relative">
+                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
+                  required
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
                 Email
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
-                required
-              />
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
+                  required
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a strong password"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-xl">
-                {error}
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a strong password"
+                  className="w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-            )}
+              {/* Password strength meter */}
+              {password.length > 0 && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="flex gap-1 flex-1">
+                    {[1, 2, 3].map((level) => (
+                      <div
+                        key={level}
+                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                          pwStrength >= level ? pwColors[pwStrength] : "bg-white/10"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`text-[10px] font-medium ${
+                    pwStrength === 1 ? "text-red-400" : pwStrength === 2 ? "text-amber-400" : "text-emerald-400"
+                  }`}>
+                    {pwLabels[pwStrength]}
+                  </span>
+                </div>
+              )}
+            </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 shadow-lg shadow-primary/20 text-sm"
+              className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-xl transition-all duration-300 disabled:opacity-50 shadow-lg shadow-primary/20 text-sm group flex items-center justify-center gap-2"
             >
               {loading ? (
                 <span className="inline-flex items-center gap-2">
@@ -121,7 +159,10 @@ const RegisterPage: React.FC = () => {
                   Creating account...
                 </span>
               ) : (
-                "Create Account"
+                <>
+                  Create Account
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </>
               )}
             </button>
           </form>

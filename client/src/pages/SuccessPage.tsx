@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import confetti from "canvas-confetti";
+import { Ticket, Eye, Film, QrCode, Calendar, MapPin, Clock, Armchair } from "lucide-react";
 
 interface SuccessData {
   bookingId: string;
@@ -13,28 +15,53 @@ interface SuccessData {
   totalPrice: number;
 }
 
-function generateConfetti(count: number) {
-  const colors = ["#dc354f", "#ff6b81", "#06b6d4", "#a855f7", "#22c55e", "#eab308", "#f97316"];
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    delay: Math.random() * 2,
-    duration: 2 + Math.random() * 2,
-    color: colors[i % colors.length],
-    rotation: Math.random() * 360,
-    size: 6 + Math.random() * 8,
-    shape: Math.random() > 0.5 ? "circle" : "square",
-  }));
-}
-
 const SuccessPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const data = location.state as SuccessData | undefined;
-  const confettiPieces = useMemo(() => generateConfetti(40), []);
+  const confettiFired = useRef(false);
 
   useEffect(() => {
-    if (!data) navigate("/");
+    if (!data) { navigate("/"); return; }
+    if (confettiFired.current) return;
+    confettiFired.current = true;
+
+    // Fire multiple confetti bursts for celebration
+    const duration = 3000;
+    const end = Date.now() + duration;
+    const colors = ["#dc354f", "#ff6b81", "#06b6d4", "#a855f7", "#22c55e", "#eab308"];
+
+    const frame = () => {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.7 },
+        colors,
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.7 },
+        colors,
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    };
+    frame();
+
+    // big burst after delay
+    setTimeout(() => {
+      confetti({
+        particleCount: 120,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors,
+        startVelocity: 30,
+        gravity: 0.8,
+        scalar: 1.2,
+      });
+    }, 400);
   }, [data, navigate]);
 
   if (!data) return null;
@@ -42,31 +69,18 @@ const SuccessPage: React.FC = () => {
   const { bookingId, bookingMongoId, movieTitle, seatNumbers, showTime, showDate, screenName, totalPrice } = data;
 
   const verifyUrl = `${window.location.origin}/verify/${bookingId}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(verifyUrl)}&bgcolor=0a0a1a&color=ffffff`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(verifyUrl)}&bgcolor=0a0a1a&color=ffffff`;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {confettiPieces.map((piece) => (
-        <div
-          key={piece.id}
-          className="confetti-piece"
-          style={{
-            left: `${piece.left}%`,
-            animationDelay: `${piece.delay}s`,
-            animationDuration: `${piece.duration}s`,
-            width: piece.size,
-            height: piece.size,
-            backgroundColor: piece.color,
-            borderRadius: piece.shape === "circle" ? "50%" : "2px",
-            transform: `rotate(${piece.rotation}deg)`,
-          }}
-        />
-      ))}
+      {/* Ambient glows */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         className="w-full max-w-md relative z-10"
       >
         {/* Animated checkmark */}
@@ -74,15 +88,15 @@ const SuccessPage: React.FC = () => {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
-          className="mx-auto w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6"
+          className="mx-auto w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 ring-4 ring-emerald-500/5"
         >
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-            className="w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30"
+            className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/40"
           >
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <motion.path
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
@@ -96,113 +110,150 @@ const SuccessPage: React.FC = () => {
           </motion.div>
         </motion.div>
 
-        <h1 className="text-2xl font-bold text-white text-center mb-1">
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="text-2xl sm:text-3xl font-bold text-white text-center mb-1"
+        >
           Booking Confirmed!
-        </h1>
-        <p className="text-gray-400 text-center text-sm mb-8">
-          Your tickets have been booked. Enjoy the movie!
-        </p>
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+          className="text-gray-400 text-center text-sm mb-8"
+        >
+          Grab your popcorn — you're all set!
+        </motion.p>
 
         {/* E-Ticket Card */}
-        <div className="glass-strong rounded-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/20 to-indigo-500/10 p-5 text-center">
-            <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-medium">
-              E-Ticket
-            </p>
-            <h2 className="text-xl font-bold text-white mt-1.5">
-              {movieTitle}
-            </h2>
-            {bookingId && (
-              <p className="text-xs text-accent font-mono mt-2 bg-accent/10 inline-block px-3 py-1 rounded-full">
-                {bookingId}
-              </p>
-            )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.5 }}
+          className="glass-card rounded-2xl overflow-hidden border border-white/[0.06]"
+        >
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/15 to-indigo-500/10" />
+            <div className="relative p-5 text-center">
+              <div className="inline-flex items-center gap-1.5 text-[10px] text-gray-400 uppercase tracking-[0.2em] font-medium mb-1.5">
+                <Ticket className="w-3 h-3" />
+                E-Ticket
+              </div>
+              <h2 className="text-xl font-bold text-white">
+                {movieTitle}
+              </h2>
+              {bookingId && (
+                <p className="text-xs text-primary font-mono mt-2 bg-primary/10 inline-block px-3 py-1 rounded-full border border-primary/20 font-bold">
+                  {bookingId}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Tear line */}
-          <div className="relative px-5">
-            <div className="border-t-2 border-dashed border-white/10" />
-            <div className="absolute -left-3 -top-3 w-6 h-6 rounded-full bg-dark" />
-            <div className="absolute -right-3 -top-3 w-6 h-6 rounded-full bg-dark" />
-          </div>
+          <div className="ticket-tear" />
 
           <div className="p-5 sm:p-6 space-y-4">
-            <div className="flex justify-between">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Show Time</p>
-                <p className="font-semibold text-gray-200 mt-0.5">{showTime}</p>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider font-bold flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Show Time
+                </p>
+                <p className="font-semibold text-gray-200 mt-1 text-sm">{showTime}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Tickets</p>
-                <p className="font-semibold text-gray-200 mt-0.5">{seatNumbers.length}</p>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider font-bold flex items-center gap-1 justify-end">
+                  <Armchair className="w-3 h-3" /> Tickets
+                </p>
+                <p className="font-semibold text-gray-200 mt-1 text-sm">{seatNumbers.length}</p>
               </div>
             </div>
 
             {(showDate || screenName) && (
-              <div className="flex justify-between">
+              <div className="grid grid-cols-2 gap-4">
                 {showDate && (
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Date</p>
-                    <p className="font-semibold text-gray-200 mt-0.5">
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wider font-bold flex items-center gap-1">
+                      <Calendar className="w-3 h-3" /> Date
+                    </p>
+                    <p className="font-semibold text-gray-200 mt-1 text-sm">
                       {new Date(showDate + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
                     </p>
                   </div>
                 )}
                 {screenName && (
                   <div className={showDate ? "text-right" : ""}>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Screen</p>
-                    <p className="font-semibold text-gray-200 mt-0.5">{screenName}</p>
+                    <p className={`text-[10px] text-gray-600 uppercase tracking-wider font-bold flex items-center gap-1 ${showDate ? "justify-end" : ""}`}>
+                      <MapPin className="w-3 h-3" /> Screen
+                    </p>
+                    <p className="font-semibold text-gray-200 mt-1 text-sm">{screenName}</p>
                   </div>
                 )}
               </div>
             )}
 
             <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Seats</p>
-              <p className="font-semibold text-gray-200 mt-0.5">{seatNumbers.sort().join(", ")}</p>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider font-bold">Seats</p>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {seatNumbers.sort().map((seat) => (
+                  <span key={seat} className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md font-mono font-bold border border-emerald-500/20">
+                    {seat}
+                  </span>
+                ))}
+              </div>
             </div>
 
             {totalPrice > 0 && (
-              <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Amount Paid</p>
-                <p className="text-2xl font-bold gradient-text mt-1">₹{totalPrice.toLocaleString()}</p>
+              <div className="bg-white/[0.03] rounded-xl p-4 text-center border border-white/[0.04]">
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider font-bold">Amount Paid</p>
+                <p className="text-2xl font-bold gradient-text-gold mt-1">₹{totalPrice.toLocaleString()}</p>
               </div>
             )}
 
             {/* QR Code */}
             <div className="flex flex-col items-center pt-2">
-              <a href={verifyUrl} target="_blank" rel="noopener noreferrer">
-                <img
-                  src={qrUrl}
-                  alt="Ticket QR Code"
-                  className="w-36 h-36 rounded-lg border border-white/10 bg-dark p-1"
-                />
+              <a href={verifyUrl} target="_blank" rel="noopener noreferrer" className="group">
+                <div className="relative">
+                  <img
+                    src={qrUrl}
+                    alt="Ticket QR Code"
+                    className="w-40 h-40 rounded-xl border border-white/10 bg-[#0a0a1a] p-2 transition-transform group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 rounded-xl ring-1 ring-white/5 group-hover:ring-primary/30 transition-all" />
+                </div>
               </a>
-              <p className="text-[10px] text-gray-500 mt-2">Scan or tap to view your ticket</p>
+              <p className="text-[10px] text-gray-600 mt-2 flex items-center gap-1">
+                <QrCode className="w-3 h-3" /> Scan at venue for entry
+              </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Actions */}
         <div className="mt-6 space-y-3">
           {bookingMongoId && (
             <Link
               to={`/booking/${bookingMongoId}`}
-              className="block w-full text-center bg-primary hover:bg-primary-dark text-white py-3.5 rounded-xl font-semibold transition-colors shadow-lg shadow-primary/20"
+              className="w-full text-center bg-primary hover:bg-primary-dark text-white py-3.5 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
             >
+              <Eye className="w-4 h-4" />
               View Full Ticket
             </Link>
           )}
           <Link
             to="/my-bookings"
-            className="block w-full text-center bg-white/5 hover:bg-white/10 text-white py-3.5 rounded-xl font-semibold transition-colors border border-white/5"
+            className="w-full text-center bg-white/5 hover:bg-white/10 text-white py-3.5 rounded-xl font-semibold transition-all duration-300 border border-white/[0.06] flex items-center justify-center gap-2"
           >
+            <Ticket className="w-4 h-4" />
             View All Bookings
           </Link>
           <Link
             to="/"
-            className="block text-center text-gray-500 hover:text-primary text-sm font-medium py-2 transition-colors"
+            className="text-center text-gray-500 hover:text-primary text-sm font-medium py-2 transition-colors flex items-center justify-center gap-1.5"
           >
+            <Film className="w-3.5 h-3.5" />
             Browse More Movies
           </Link>
         </div>

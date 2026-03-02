@@ -8,6 +8,11 @@ import { getSeatCategory } from "../components/SeatLayout";
 import loadRazorpay from "../utils/loadRazorpay";
 import { getFoodMenu } from "../api/theatre";
 import { FoodItem, FoodOrderItem, SeatCategory, SeatConfig } from "../types/User";
+import { toast } from "sonner";
+import {
+  ArrowLeft, Clock, ShieldCheck, CreditCard,
+  ChevronDown, Minus, Plus, Timer, Armchair, MapPin, Ticket,
+} from "lucide-react";
 
 declare global {
   interface Window {
@@ -28,6 +33,8 @@ interface BookingData {
   seatConfig?: SeatConfig | null;
 }
 
+const LOCK_DURATION_SECONDS = 10 * 60; // 10 minutes
+
 const ConfirmBooking: React.FC = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -39,6 +46,10 @@ const ConfirmBooking: React.FC = () => {
   const [status, setStatus] = useState<string>("");
   const [seatsLocked, setSeatsLocked] = useState(false);
   const lockAttempted = useRef(false);
+
+  // Countdown timer for seat hold
+  const [timeLeft, setTimeLeft] = useState(LOCK_DURATION_SECONDS);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Food add-on state
   const [foodMenu, setFoodMenu] = useState<FoodItem[]>([]);
@@ -61,6 +72,16 @@ const ConfirmBooking: React.FC = () => {
         );
         if (result.locked) {
           setSeatsLocked(true);
+          // Start countdown timer
+          timerRef.current = setInterval(() => {
+            setTimeLeft((prev) => {
+              if (prev <= 1) {
+                if (timerRef.current) clearInterval(timerRef.current);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
         } else {
           setError(
             `Some seats were just taken by another user: ${result.conflicting?.join(", ")}. Please go back and pick different seats.`
@@ -73,7 +94,19 @@ const ConfirmBooking: React.FC = () => {
       }
     };
     acquireLock();
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [bookingData]);
+
+  // When timer expires, redirect back
+  useEffect(() => {
+    if (timeLeft === 0 && bookingData) {
+      toast.error("Seat hold expired. Please select your seats again.");
+      navigate(`/book/${bookingData.movieId}`);
+    }
+  }, [timeLeft, bookingData, navigate]);
 
   // Release seats if user navigates away without completing booking
   useEffect(() => {
@@ -158,6 +191,11 @@ const ConfirmBooking: React.FC = () => {
     .filter((f) => foodCart[f._id] > 0)
     .map((f) => ({ item: f._id, name: f.name, quantity: foodCart[f._id], price: f.price }));
 
+  // Countdown display
+  const countdownMins = Math.floor(timeLeft / 60);
+  const countdownSecs = timeLeft % 60;
+  const isUrgent = timeLeft <= 120; // under 2 minutes
+
   const handlePay = async () => {
     setLoading(true);
     setError(null);
@@ -166,7 +204,7 @@ const ConfirmBooking: React.FC = () => {
     try {
       const loaded = await loadRazorpay();
       if (!loaded) {
-        setError("Failed to load payment gateway. Check your internet connection.");
+        toast.error("Failed to load payment gateway. Check your internet connection.");
         setLoading(false);
         setStatus("");
         return;
@@ -202,6 +240,7 @@ const ConfirmBooking: React.FC = () => {
               const result = await createBooking(movieId, seatNumbers, showTime, grandTotal, verification.paymentId, foodOrders.length > 0 ? foodOrders : undefined, foodTotal || undefined, showDate);
               // Booking succeeded — prevent cleanup from releasing locks
               setSeatsLocked(false);
+              if (timerRef.current) clearInterval(timerRef.current);
               navigate("/success", {
                 state: {
                   bookingId: result.booking?.bookingId || "",
@@ -215,10 +254,10 @@ const ConfirmBooking: React.FC = () => {
                 },
               });
             } else {
-              setError("Payment verification failed. Contact support if amount was deducted.");
+              toast.error("Payment verification failed. Contact support if amount was deducted.");
             }
           } catch (err: any) {
-            setError(err.message || "Booking failed after payment. Contact support.");
+            toast.error(err.message || "Booking failed after payment. Contact support.");
           } finally {
             setLoading(false);
             setStatus("");
@@ -242,13 +281,13 @@ const ConfirmBooking: React.FC = () => {
 
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (response: any) => {
-        setError(`Payment failed: ${response.error.description}`);
+        toast.error(`Payment failed: ${response.error.description}`);
         setLoading(false);
         setStatus("");
       });
       rzp.open();
     } catch (err: any) {
-      setError(err.message || "Failed to initiate payment.");
+      toast.error(err.message || "Failed to initiate payment.");
       setLoading(false);
       setStatus("");
     }
@@ -264,97 +303,126 @@ const ConfirmBooking: React.FC = () => {
         {/* Back link */}
         <button
           onClick={() => navigate(`/book/${movieId}`)}
-          className="text-gray-500 hover:text-gray-300 text-sm mb-4 inline-flex items-center gap-1 transition-colors"
+          className="text-gray-500 hover:text-white text-sm mb-5 inline-flex items-center gap-1.5 transition-all duration-300 hover:-translate-x-0.5"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ArrowLeft className="w-4 h-4" />
           Modify selection
         </button>
 
-        <h1 className="text-2xl font-bold text-white mb-6">
-          Booking Summary
-        </h1>
+        {/* Header with countdown */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-white">
+            Booking Summary
+          </h1>
 
-        <div className="glass-strong rounded-2xl overflow-hidden">
+          {/* Countdown Timer */}
+          {seatsLocked && timeLeft > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-mono font-bold ${
+                isUrgent
+                  ? "bg-red-500/10 border-red-500/30 text-red-400"
+                  : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+              }`}
+            >
+              <Timer className={`w-4 h-4 ${isUrgent ? "animate-pulse" : ""}`} />
+              <span>{String(countdownMins).padStart(2, "0")}:{String(countdownSecs).padStart(2, "0")}</span>
+            </motion.div>
+          )}
+        </div>
+
+        <div className="glass-card rounded-2xl overflow-hidden border border-white/[0.06]">
           {/* Movie banner */}
-          <div className="flex gap-4 p-5 sm:p-6 bg-gradient-to-r from-primary/20 to-indigo-500/10">
+          <div className="relative overflow-hidden">
             {posterUrl && (
-              <img
-                src={posterUrl}
-                alt={movieTitle}
-                className="w-16 h-24 sm:w-20 sm:h-28 object-cover rounded-lg shadow-lg flex-shrink-0"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
+              <div className="absolute inset-0">
+                <img src={posterUrl} alt="" className="w-full h-full object-cover blur-3xl opacity-20 scale-110" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0f0f25]" />
+              </div>
             )}
-            <div className="flex flex-col justify-center min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold text-white truncate">
-                {movieTitle}
-              </h2>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="text-xs bg-white/10 text-gray-300 px-2.5 py-0.5 rounded-full">
-                  {showTime}
-                </span>
-                {showDate && (
-                  <span className="text-xs bg-white/10 text-gray-300 px-2.5 py-0.5 rounded-full">
-                    {new Date(showDate + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+            <div className="relative flex gap-4 p-5 sm:p-6">
+              {posterUrl && (
+                <img
+                  src={posterUrl}
+                  alt={movieTitle}
+                  className="w-16 h-24 sm:w-20 sm:h-28 object-cover rounded-lg shadow-2xl shadow-black/50 flex-shrink-0 border border-white/10"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                />
+              )}
+              <div className="flex flex-col justify-center min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-white truncate">
+                  {movieTitle}
+                </h2>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className="text-xs bg-white/10 text-gray-300 px-2.5 py-1 rounded-full flex items-center gap-1 border border-white/5">
+                    <Clock className="w-3 h-3" />
+                    {showTime}
                   </span>
-                )}
-                {screenName && (
-                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full">
-                    {screenName}
+                  {showDate && (
+                    <span className="text-xs bg-white/10 text-gray-300 px-2.5 py-1 rounded-full border border-white/5">
+                      {new Date(showDate + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                    </span>
+                  )}
+                  {screenName && (
+                    <span className="text-xs bg-indigo-500/15 text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-500/20 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {screenName}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <Armchair className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-xs text-gray-400">
+                    <span className="text-white font-semibold">{seatNumbers.length}</span> seat{seatNumbers.length > 1 ? "s" : ""}
                   </span>
-                )}
-                <span className="text-xs text-gray-400">
-                  {seatNumbers.length} seat{seatNumbers.length > 1 ? "s" : ""}
-                </span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Price breakdown */}
           <div className="p-5 sm:p-6 space-y-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <Ticket className="w-3.5 h-3.5" />
               Price Breakdown
             </h3>
 
             {Object.entries(seatsByCategory).map(([category, data]) => (
-              <div key={category} className="flex items-center justify-between py-2">
+              <div key={category} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-white/[0.02]">
                 <div>
                   <p className="font-medium text-gray-200 text-sm">
                     {category}{" "}
                     <span className="text-gray-500 font-normal">
-                      ({data.seats.length} ticket{data.seats.length > 1 ? "s" : ""})
+                      x{data.seats.length}
                     </span>
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Seats: {data.seats.sort().join(", ")}
+                  <p className="text-xs text-gray-600 mt-0.5 font-mono">
+                    {data.seats.sort().join(", ")}
                   </p>
                 </div>
-                <p className="font-semibold text-gray-200 text-sm">
+                <p className="font-semibold text-white text-sm">
                   ₹{(data.price * data.seats.length).toLocaleString()}
                 </p>
               </div>
             ))}
 
-            <div className="border-t border-white/5 pt-4">
+            <div className="border-t border-white/[0.04] pt-4">
               {/* Food add-on toggle */}
               {foodMenu.length > 0 && (
                 <div className="mb-4">
                   <button
                     onClick={() => setShowFood(!showFood)}
-                    className="w-full flex items-center justify-between py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all group"
+                    className="w-full flex items-center justify-between py-3 px-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition-all group"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <span className="text-lg">🍿</span>
-                      <span className="text-sm font-medium text-gray-200 group-hover:text-white">Add Snacks & Beverages</span>
+                      <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">Add Snacks & Beverages</span>
                       {foodTotal > 0 && (
-                        <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">₹{foodTotal}</span>
+                        <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-bold border border-amber-500/20">+₹{foodTotal}</span>
                       )}
                     </div>
-                    <svg className={`w-4 h-4 text-gray-500 transition-transform ${showFood ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${showFood ? "rotate-180" : ""}`} />
                   </button>
 
                   <AnimatePresence>
@@ -363,31 +431,35 @@ const ConfirmBooking: React.FC = () => {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-3 space-y-2">
+                        <div className="mt-3 space-y-1.5">
                           {foodMenu.map((item) => (
-                            <div key={item._id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+                            <div key={item._id} className="flex items-center gap-3 py-3 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all border border-transparent hover:border-white/[0.04]">
                               {item.imageUrl && (
-                                <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-white/10" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                                <img src={item.imageUrl} alt={item.name} className="w-11 h-11 rounded-lg object-cover flex-shrink-0 border border-white/10" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                               )}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
-                                  <span className={`w-2.5 h-2.5 rounded-sm flex-shrink-0 ${item.isVeg ? "bg-emerald-500" : "bg-red-500"}`} />
+                                  <span className={`w-2.5 h-2.5 rounded-sm flex-shrink-0 border ${item.isVeg ? "bg-emerald-500 border-emerald-400" : "bg-red-500 border-red-400"}`} />
                                   <p className="text-sm font-medium text-gray-200 truncate">{item.name}</p>
                                 </div>
-                                <p className="text-xs text-gray-500">₹{item.price}</p>
+                                <p className="text-xs text-gray-500 font-semibold mt-0.5">₹{item.price}</p>
                               </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
                                 {(foodCart[item._id] || 0) > 0 ? (
                                   <>
-                                    <button onClick={() => updateFoodQty(item._id, -1)} className="w-7 h-7 rounded-full bg-white/10 text-white text-sm flex items-center justify-center hover:bg-white/20 transition-all">−</button>
-                                    <span className="text-sm font-semibold text-white w-4 text-center">{foodCart[item._id]}</span>
-                                    <button onClick={() => updateFoodQty(item._id, 1)} className="w-7 h-7 rounded-full bg-primary text-white text-sm flex items-center justify-center hover:bg-primary-dark transition-all">+</button>
+                                    <button onClick={() => updateFoodQty(item._id, -1)} className="w-7 h-7 rounded-full bg-white/10 text-white text-sm flex items-center justify-center hover:bg-white/20 transition-all">
+                                      <Minus className="w-3.5 h-3.5" />
+                                    </button>
+                                    <span className="text-sm font-bold text-white w-5 text-center">{foodCart[item._id]}</span>
+                                    <button onClick={() => updateFoodQty(item._id, 1)} className="w-7 h-7 rounded-full bg-primary text-white text-sm flex items-center justify-center hover:bg-primary-dark transition-all">
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
                                   </>
                                 ) : (
-                                  <button onClick={() => updateFoodQty(item._id, 1)} className="text-xs text-primary font-semibold px-3 py-1.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-all">ADD</button>
+                                  <button onClick={() => updateFoodQty(item._id, 1)} className="text-xs text-primary font-bold px-3.5 py-1.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-all">ADD</button>
                                 )}
                               </div>
                             </div>
@@ -401,26 +473,27 @@ const ConfirmBooking: React.FC = () => {
 
               {/* Subtotals */}
               {foodTotal > 0 && (
-                <div className="space-y-2 mb-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Tickets</span>
-                    <span className="text-gray-300">₹{totalPrice.toLocaleString()}</span>
+                <div className="space-y-2 mb-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Tickets</span>
+                    <span className="text-gray-300 font-medium">₹{totalPrice.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Snacks & Beverages</span>
-                    <span className="text-gray-300">₹{foodTotal.toLocaleString()}</span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Snacks & Beverages</span>
+                    <span className="text-gray-300 font-medium">₹{foodTotal.toLocaleString()}</span>
                   </div>
+                  <div className="border-t border-white/[0.04]" />
                 </div>
               )}
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-base font-bold text-white">Total Amount</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-base font-bold text-white">Total</p>
+                  <p className="text-[11px] text-gray-600">
                     {seatNumbers.length} ticket{seatNumbers.length > 1 ? "s" : ""}{foodTotal > 0 ? " + snacks" : ""} incl. taxes
                   </p>
                 </div>
-                <p className="text-2xl font-bold gradient-text">
+                <p className="text-2xl font-bold gradient-text-gold">
                   ₹{grandTotal.toLocaleString()}
                 </p>
               </div>
@@ -429,7 +502,10 @@ const ConfirmBooking: React.FC = () => {
 
           {/* Error message */}
           {error && (
-            <div className="mx-5 sm:mx-6 mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-sm">
+            <div className="mx-5 sm:mx-6 mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-3.5 rounded-xl text-sm flex items-start gap-2">
+              <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-[10px] font-bold">!</span>
+              </div>
               {error}
             </div>
           )}
@@ -437,7 +513,7 @@ const ConfirmBooking: React.FC = () => {
           {/* Status indicator */}
           {status && (
             <div className="mx-5 sm:mx-6 mb-4 text-gray-400 text-sm text-center flex items-center justify-center gap-2">
-              <div className="animate-spin h-3 w-3 border-2 border-primary/30 border-t-primary rounded-full" />
+              <div className="animate-spin h-3.5 w-3.5 border-2 border-primary/30 border-t-primary rounded-full" />
               {status}
             </div>
           )}
@@ -446,8 +522,8 @@ const ConfirmBooking: React.FC = () => {
           <div className="px-5 sm:px-6 pb-5 sm:pb-6">
             <button
               onClick={handlePay}
-              disabled={loading}
-              className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 text-sm sm:text-base"
+              disabled={loading || timeLeft === 0}
+              className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/25 text-sm sm:text-base group flex items-center justify-center gap-2"
             >
               {loading ? (
                 <span className="inline-flex items-center gap-2">
@@ -455,18 +531,19 @@ const ConfirmBooking: React.FC = () => {
                   Processing...
                 </span>
               ) : (
-                `Pay ₹${grandTotal.toLocaleString()}`
+                <>
+                  <CreditCard className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  Pay ₹{grandTotal.toLocaleString()}
+                </>
               )}
             </button>
           </div>
         </div>
 
         {/* Security note */}
-        <p className="text-center text-xs text-gray-600 mt-4 flex items-center justify-center gap-1.5">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          Secured by Razorpay
+        <p className="text-center text-xs text-gray-600 mt-5 flex items-center justify-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          Secured by Razorpay — 256-bit encryption
         </p>
       </div>
     </motion.div>
