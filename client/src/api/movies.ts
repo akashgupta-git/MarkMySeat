@@ -27,13 +27,27 @@ export interface Movie {
   } | null;
 }
 
-export const getMovies = async (): Promise<Movie[]> => {
+// pull all active movies, optionally narrowed down to a particular city
+export const getMovies = async (city?: string): Promise<Movie[]> => {
   try {
-    const response = await api.get("/movies/all");
+    const params: Record<string, string> = {};
+    if (city) params.city = city;
+    const response = await api.get("/movies/all", { params });
     return response.data || [];
   } catch (error) {
     console.error("Error fetching movies:", error);
     throw new Error("Could not fetch movies.");
+  }
+};
+
+// grab the list of cities where movies are actually playing right now
+export const getCities = async (): Promise<string[]> => {
+  try {
+    const response = await api.get("/movies/cities");
+    return response.data || [];
+  } catch (error) {
+    console.error("Error fetching cities:", error);
+    return [];
   }
 };
 

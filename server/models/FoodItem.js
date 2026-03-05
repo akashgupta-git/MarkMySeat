@@ -32,7 +32,7 @@ const foodItemSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // which theatre offers this (null = global/default menu)
+    // which theatre sells this item (null means it's on the default/global menu)
     theatre: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Theatre",

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-// generates a short unique booking ID like MMS-20260228-A3F7
+// makes a short unique booking ID like MMS-20260228-A3F7 — easy to read and share
 function generateBookingId() {
   const date = new Date();
   const y = date.getFullYear();

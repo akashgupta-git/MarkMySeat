@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Clock, Play } from "lucide-react";
+import { Clock, Play, MapPin } from "lucide-react";
 
 interface MovieCardProps {
   movie: {
@@ -12,6 +12,10 @@ interface MovieCardProps {
     language?: string;
     duration?: string;
     rating?: number | string;
+    theatre?: {
+      name?: string;
+      city?: string;
+    } | null;
   };
 }
 
@@ -91,6 +95,16 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-300">
             {movie.language && <span className="bg-white/10 px-1.5 py-0.5 rounded">{movie.language}</span>}
           </div>
+          {/* Theatre / city info (when available) */}
+          {movie.theatre?.name && (
+            <div className="flex items-center gap-1 mt-1.5 text-[10px] text-gray-400 truncate">
+              <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+              <span className="truncate">
+                {movie.theatre.name}
+                {movie.theatre.city ? ` · ${movie.theatre.city}` : ""}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

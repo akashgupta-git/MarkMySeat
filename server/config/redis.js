@@ -1,8 +1,8 @@
 const Redis = require("ioredis");
 
-// Redis connection — works with Redis Cloud, Upstash, or local Redis.
-// Set REDIS_URL in your .env to the full connection string.
-// Falls back to localhost:6379 for local dev.
+// Redis connection — works with Redis Cloud, Upstash, or local installs.
+// Just set REDIS_URL in .env. If it's missing, we skip Redis entirely
+// and the app still works (just without real-time seat locking).
 
 let redis = null;
 let redisReady = false;

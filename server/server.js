@@ -16,13 +16,13 @@ const theatreRoutes = require("./routes/theatreRoutes");
 const foodRoutes = require("./routes/foodRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
-// concurrency infrastructure
+// seat locking needs redis + bullmq
 const { getRedis, isRedisReady } = require("./config/redis");
 const { initBookingQueue } = require("./services/bookingQueue");
 
 const app = express();
 
-// only allow our frontend origins (netlify prod + local dev)
+// only let requests from our own frontend through (netlify prod + localhost dev)
 const allowedOrigins = [
   "https://markmyseat.netlify.app",
   "http://localhost:3000",
@@ -57,7 +57,7 @@ app.use("/api/theatre", theatreRoutes);
 app.use("/api/food", foodRoutes);
 app.use("/api/admin", adminRoutes);
 
-// quick health check endpoint - useful for monitoring on render
+// simple health check — handy for uptime monitoring on Render
 app.get("/api/health", async (req, res) => {
   try {
     const dbState = mongoose.connection.readyState;
@@ -78,19 +78,19 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// version endpoint (handy for debugging deploys)
+// version info so we know which build is deployed
 app.get("/api/version", (req, res) => {
   const version = process.env.BUILD_VERSION || "v1.0.0";
   const buildTime = process.env.BUILD_TIME || new Date().toISOString();
   res.json({ version, buildTime });
 });
 
-// root route - just so we know it's alive
+// sanity check — just confirms the API is alive
 app.get("/", (req, res) => {
   res.send("MarkMySeat API is live");
 });
 
-// connect to mongo
+// fire up mongo, then redis, then the booking queue
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {

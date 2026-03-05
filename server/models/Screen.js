@@ -37,7 +37,7 @@ const screenSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Ensure unique screen numbers within a theatre
+// make sure two screens in the same theatre can't share a number
 screenSchema.index({ theatre: 1, screenNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model("Screen", screenSchema);

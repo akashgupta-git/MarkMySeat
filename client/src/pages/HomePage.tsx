@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useContext } from "react";
 import { getMovies, Movie } from "../api/movies";
+import { CityContext } from "../context/CityContext";
 import MovieCard from "../components/MovieCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, TrendingUp, SlidersHorizontal } from "lucide-react";
+import { Search, Sparkles, TrendingUp, SlidersHorizontal, MapPin } from "lucide-react";
 
 const GENRES = ["All", "Action", "Drama", "Thriller", "Comedy", "Sci-Fi", "Romance", "Crime"];
 
@@ -11,7 +12,7 @@ const GENRE_ICONS: Record<string, string> = {
   "Sci-Fi": "🚀", Romance: "💕", Crime: "🕵️",
 };
 
-// Floating particles for hero
+// little floating dots in the hero — just for the vibe
 function Particles() {
   return (
     <div className="particles">
@@ -39,16 +40,19 @@ function Particles() {
 }
 
 const HomePage: React.FC = () => {
+  const { selectedCity } = useContext(CityContext);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("All");
   const [loading, setLoading] = useState(true);
   const [searchFocused, setSearchFocused] = useState(false);
 
+  // re-fetch the movie list whenever the user picks a different city
   useEffect(() => {
     const fetchMovies = async () => {
+      setLoading(true);
       try {
-        const data = await getMovies();
+        const data = await getMovies(selectedCity || undefined);
         setMovies(data);
       } catch (err) {
         console.error("Failed to load movies:", err);
@@ -57,7 +61,7 @@ const HomePage: React.FC = () => {
       }
     };
     fetchMovies();
-  }, []);
+  }, [selectedCity]);
 
   const filtered = useMemo(() => {
     return movies.filter((m) => {
@@ -94,8 +98,11 @@ const HomePage: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-xs font-medium text-gray-300">
-                {movies.length > 0 ? `${movies.length} movies now showing` : "Discover movies"}
+                {movies.length > 0
+                  ? `${movies.length} movies${selectedCity ? ` in ${selectedCity}` : ""}`
+                  : "Discover movies"}
               </span>
+              {selectedCity && <MapPin className="w-3 h-3 text-primary" />}
               <TrendingUp className="w-3 h-3 text-emerald-400" />
             </motion.div>
 
@@ -144,7 +151,9 @@ const HomePage: React.FC = () => {
         {/* Section header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-1 h-6 bg-primary rounded-full" />
-          <h2 className="text-xl sm:text-2xl font-bold text-white">Now Showing</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white">
+            Now Showing{selectedCity ? ` in ${selectedCity}` : ""}
+          </h2>
           <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
           {!loading && filtered.length > 0 && (
             <span className="text-xs text-gray-500 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">

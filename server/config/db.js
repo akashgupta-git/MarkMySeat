@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const MONGO_URI = process.env.MONGO_URI;
 
-// standalone db connector - not used in server.js rn but keeping it
-// in case we want to separate concerns later
+// standalone helper to connect to mongo — not actually used in server.js right now,
+// but keeping it around in case we want to split things up later
 const connectDB = async () => {
   try {
     await mongoose.connect(MONGO_URI);

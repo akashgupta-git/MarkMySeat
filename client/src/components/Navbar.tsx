@@ -1,34 +1,45 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { CityContext } from "../context/CityContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "./Logo";
-import { Film, Ticket, User, LogOut, Menu, X, ChevronDown, Building2 } from "lucide-react";
+import { Film, Ticket, User, LogOut, Menu, X, ChevronDown, Building2, MapPin } from "lucide-react";
 
 const Navbar: React.FC = () => {
   const { user, setUser } = useContext(AuthContext);
+  const { selectedCity, setSelectedCity, cities } = useContext(CityContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const cityRef = useRef<HTMLDivElement>(null);
 
+  // shrink the nav once the user scrolls down a bit
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // tidy up dropdowns whenever we navigate to a different page
   useEffect(() => {
     setMobileOpen(false);
     setProfileOpen(false);
+    setCityOpen(false);
   }, [location.pathname]);
 
+  // clicking outside a dropdown should close it
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
+      }
+      if (cityRef.current && !cityRef.current.contains(e.target as Node)) {
+        setCityOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -43,7 +54,18 @@ const Navbar: React.FC = () => {
     setProfileOpen(false);
   };
 
+  // when they pick a city, jump to homepage so they instantly see filtered results
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city);
+    setCityOpen(false);
+    // if user is not on the homepage, take them there so they see the filtered results
+    if (location.pathname !== "/") navigate("/");
+  };
+
   const isActive = (path: string) => location.pathname === path;
+
+  // city selector button (shared between desktop and mobile)
+  const cityLabel = selectedCity || "All Cities";
 
   return (
     <nav
@@ -56,13 +78,68 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="group relative">
+          <Link to="/" className="group relative flex-shrink-0">
             <Logo size="md" />
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-primary/0 group-hover:w-full transition-all duration-500" />
           </Link>
 
+          {/* City selector — sits next to the logo on desktop */}
+          {cities.length > 0 && (
+            <div ref={cityRef} className="relative hidden sm:block ml-4">
+              <button
+                onClick={() => setCityOpen(!cityOpen)}
+                className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 transition-all duration-300 group"
+              >
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+                <span className="text-gray-300 max-w-[120px] truncate">{cityLabel}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-300 ${cityOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              <AnimatePresence>
+                {cityOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 mt-2 w-52 rounded-xl bg-[#161630]/95 backdrop-blur-2xl border border-white/[0.06] shadow-2xl shadow-black/40 overflow-hidden z-50"
+                  >
+                    <div className="p-1.5 max-h-72 overflow-y-auto scrollbar-hide">
+                      {/* "All Cities" option */}
+                      <button
+                        onClick={() => handleCitySelect("")}
+                        className={`w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
+                          !selectedCity
+                            ? "text-white bg-primary/10 font-medium"
+                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        All Cities
+                      </button>
+                      {cities.map((city) => (
+                        <button
+                          key={city}
+                          onClick={() => handleCitySelect(city)}
+                          className={`w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
+                            selectedCity.toLowerCase() === city.toLowerCase()
+                              ? "text-white bg-primary/10 font-medium"
+                              : "text-gray-400 hover:text-white hover:bg-white/5"
+                          }`}
+                        >
+                          <MapPin className="w-3.5 h-3.5" />
+                          {city}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
           {/* Desktop Nav */}
-          <div className="hidden sm:flex items-center gap-1">
+          <div className="hidden sm:flex items-center gap-1 ml-auto">
             {user ? (
               <>
                 <Link
@@ -217,6 +294,38 @@ const Navbar: React.FC = () => {
               className="sm:hidden overflow-hidden"
             >
               <div className="pb-4 space-y-1 border-t border-white/5 pt-3">
+                {/* City selector in mobile menu */}
+                {cities.length > 0 && (
+                  <div className="px-3 pb-2 mb-2 border-b border-white/5">
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wider font-medium mb-2">Location</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        onClick={() => handleCitySelect("")}
+                        className={`text-xs px-3 py-1.5 rounded-full transition-all ${
+                          !selectedCity
+                            ? "bg-primary text-white font-medium"
+                            : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5"
+                        }`}
+                      >
+                        All Cities
+                      </button>
+                      {cities.map((city) => (
+                        <button
+                          key={city}
+                          onClick={() => handleCitySelect(city)}
+                          className={`text-xs px-3 py-1.5 rounded-full transition-all ${
+                            selectedCity.toLowerCase() === city.toLowerCase()
+                              ? "bg-primary text-white font-medium"
+                              : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5"
+                          }`}
+                        >
+                          {city}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {user ? (
                   <>
                     <div className="flex items-center gap-3 px-3 py-3 mb-2">

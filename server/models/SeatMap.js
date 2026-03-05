@@ -29,7 +29,7 @@ const seatMapSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Unique per movie + screen + date + time combo
+// one seat map per movie + screen + date + time combination
 seatMapSchema.index({ movie: 1, screen: 1, showDate: 1, showTime: 1 }, { unique: true });
 
 module.exports = mongoose.model("SeatMap", seatMapSchema);

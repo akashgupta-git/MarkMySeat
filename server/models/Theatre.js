@@ -29,14 +29,14 @@ const theatreSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    // number of screens this theatre has
+    // how many screens this theatre has
     screens: {
       type: Number,
       default: 1,
       min: 1,
     },
-    // custom seat layout config per screen  
-    // e.g. { rows: 8, seatsPerRow: 12, categories: [...] }
+    // seat layout — rows, seats per row, and pricing categories
+    // each category maps row letters to a price tier (like "Premium" for rows A-B)
     seatConfig: {
       rows: { type: Number, default: 8, min: 1, max: 26 },
       seatsPerRow: { type: Number, default: 12, min: 1, max: 30 },
@@ -51,7 +51,7 @@ const theatreSchema = new mongoose.Schema(
     },
     isApproved: {
       type: Boolean,
-      default: true, // auto-approve for now; set false for admin review flow
+      default: true, // auto-approve for now — we might add an admin review step later
     },
     logoUrl: {
       type: String,

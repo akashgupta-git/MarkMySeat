@@ -41,13 +41,13 @@ const movieSchema = new mongoose.Schema({
     type: [String],
     required: true,
   },
-  // theatre that manages this listing (null = seeded / system movie)
+  // which theatre owns this listing (null means it was seeded or is a system-level movie)
   theatre: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Theatre",
     default: null,
   },
-  // screen within the theatre (null = legacy / system movie)
+  // the specific screen it plays on (null for older/legacy entries)
   screen: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Screen",

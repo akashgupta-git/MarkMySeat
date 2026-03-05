@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// middleware that verifies an admin JWT token (stored as adminToken)
+// verifies the JWT is valid AND has an admin role — rejects everyone else
 const protectAdmin = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 

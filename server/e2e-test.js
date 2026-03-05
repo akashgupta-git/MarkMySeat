@@ -81,6 +81,16 @@ async function run() {
   check("Get all movies", movies.status === 200 && Array.isArray(movies.data), "status=" + movies.status);
   check("Movies list has entries", movies.data && movies.data.length > 0, "count=" + (movies.data ? movies.data.length : 0));
 
+  // city selector endpoint — should return an array of city names
+  const cities = await req("GET", "/movies/cities", null, token);
+  check("Get cities list", cities.status === 200 && Array.isArray(cities.data), "status=" + cities.status);
+
+  // filter movies by city (if we got any cities back)
+  if (cities.data && cities.data.length > 0) {
+    const cityFilter = await req("GET", "/movies/all?city=" + encodeURIComponent(cities.data[0]), null, token);
+    check("Filter movies by city", cityFilter.status === 200 && Array.isArray(cityFilter.data), "status=" + cityFilter.status);
+  }
+
   let movieId = null;
   let movie = null;
   if (movies.data && movies.data.length > 0) {

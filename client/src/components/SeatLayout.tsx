@@ -12,7 +12,7 @@ interface SeatLayoutProps {
   seatConfig?: SeatConfig | null;
 }
 
-// Default config when no screen config is provided (legacy movies / system movies)
+// fallback layout when a theatre hasn't set up their own screen config
 const DEFAULT_ROWS = 8;
 const DEFAULT_SEATS_PER_ROW = 12;
 const DEFAULT_CATEGORIES: SeatCategory[] = [
@@ -49,7 +49,7 @@ function getCatBg(hex: string): string {
   return colorToBg[hex?.toLowerCase()] || "bg-gray-300/10";
 }
 
-/** Exported helper so other components can compute price for a given seat row */
+/** handy helper so other components can look up the price/category for any seat row */
 export function getSeatCategory(
   row: string,
   categories?: SeatCategory[],
@@ -77,7 +77,8 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const stableOnSeatSelect = useCallback(onSeatSelect, []);
+  // keep a stable reference to the parent callback to avoid re-fetching seats on every render
+  const stableOnSeatSelect = useCallback(onSeatSelect, [onSeatSelect]);
 
   const totalRows = seatConfig?.rows || DEFAULT_ROWS;
   const seatsPerRow = seatConfig?.seatsPerRow || DEFAULT_SEATS_PER_ROW;
@@ -90,7 +91,7 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
     [totalRows],
   );
 
-  // compute aisle positions (roughly at 1/3 and 2/3)
+  // figure out where to put aisles (roughly at 1/3 and 2/3 of the row)
   const aisles = useMemo(() => {
     if (seatsPerRow <= 6) return [];
     const a1 = Math.floor(seatsPerRow / 3);

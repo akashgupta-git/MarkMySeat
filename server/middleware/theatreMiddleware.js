@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// middleware that verifies a theatre JWT token (stored as theatreToken)
+// similar to admin middleware but for theatre owners — checks role === "theatre"
 const protectTheatre = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
