@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const morgan = require("morgan");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const os = require("os");
@@ -46,6 +47,12 @@ app.use(
 );
 
 app.use(express.json());
+
+// log every HTTP request — method, url, status, response time
+const morganFormat = process.env.NODE_ENV === "production" ? "combined" : "dev";
+app.use(morgan(morganFormat, {
+  stream: { write: (msg) => console.log(msg.trimEnd()) }
+}));
 
 // mount routes
 app.use("/api/auth", authRoutes);

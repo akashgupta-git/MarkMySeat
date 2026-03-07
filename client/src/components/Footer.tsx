@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
-import { Film, Heart, Github, Mail } from "lucide-react";
+import { Film, Github, Mail } from "lucide-react";
 
 const Footer: React.FC = () => {
   return (
@@ -50,9 +50,11 @@ const Footer: React.FC = () => {
                 <Mail className="w-3.5 h-3.5" />
               </a>
             </div>
-            <p className="text-xs text-gray-600 flex items-center gap-1">
-              Made with <Heart className="w-3 h-3 text-red-500 fill-red-500" /> by{" "}
-              <span className="text-gray-400 font-medium">Akash</span>
+            <p className="text-xs text-gray-600">
+              Developed by{" "}
+              <a href="https://github.com/akashgupta-git" target="_blank" rel="noopener noreferrer" className="text-gray-400 font-medium hover:text-white transition-colors duration-300">
+                Akash Gupta
+              </a>
             </p>
           </div>
         </div>
