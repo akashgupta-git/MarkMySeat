@@ -83,6 +83,8 @@ The platform supports real-time interactive seat selection with configurable mul
 | **Express 5.1** | HTTP server framework |
 | **MongoDB** | NoSQL document database |
 | **Mongoose 8.16** | MongoDB ODM with schemas, indexes, and population |
+| **Redis** (`ioredis` 5.x) | In-memory store for atomic seat locking with 10-min TTL |
+| **BullMQ** | Reliable job queue for async booking processing |
 | **JWT** (`jsonwebtoken` 9.0) | Stateless authentication tokens |
 | **bcryptjs 3.0** | Password hashing with salt rounds |
 | **Razorpay SDK 2.9** | Payment order creation & signature verification |
@@ -94,6 +96,7 @@ The platform supports real-time interactive seat selection with configurable mul
 | **Netlify** | Frontend hosting with CDN & auto-deploy |
 | **Render** | Backend hosting with auto-deploy |
 | **MongoDB Atlas** | Cloud-hosted database cluster |
+| **Redis (Upstash/Render)** | Managed Redis for seat locking & job queues |
 | **Concurrently** | Run server + client in parallel during development |
 | **Nodemon** | Auto-restart server on file changes |
 
@@ -120,30 +123,34 @@ The platform supports real-time interactive seat selection with configurable mul
         │                │                      │
         ▼                ▼                      ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      EXPRESS API SERVER                           │
+│                    EXPRESS API SERVER (MVC)                       │
+│                                                                  │
+│  Routes (thin)  →  Controllers (business logic)  →  Models       │
 │                                                                  │
 │  /api/auth          – User register, login, profile              │
-│  /api/movies        – Movie CRUD, listing, filtering             │
-│  /api/bookings      – Create, list, cancel, verify bookings      │
+│  /api/movies        – Movie listing, city filter, theatres       │
+│  /api/bookings      – Create, list, cancel, verify, seat lock    │
 │  /api/payment       – Razorpay order creation & verification     │
 │  /api/theatre/auth  – Theatre register & login                   │
 │  /api/theatre       – Theatre dashboard, screens, food, stats    │
 │  /api/food          – Food menu (global + per-theatre)           │
 │  /api/admin         – SuperAdmin auth, stats, CRUD operations    │
 │  /api/health        – Health check endpoint                      │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     MONGODB ATLAS                                │
-│                                                                  │
-│  Collections: User, Theatre, Screen, Movie, Booking,             │
-│               SeatMap, FoodItem, Payment                         │
-│                                                                  │
-│  • SeatMap: per movie + screen + date + time (unique index)      │
-│  • Screen: per theatre with custom seat categories               │
-│  • Booking: references User, Movie, Theatre, Screen, FoodItem    │
-└─────────────────────────────────────────────────────────────────┘
+└──────────┬────────────────────────────────┬─────────────────────┘
+           │                                │
+           ▼                                ▼
+┌─────────────────────────┐  ┌────────────────────────────────────┐
+│      REDIS (ioredis)    │  │          MONGODB ATLAS             │
+│                         │  │                                    │
+│  • Atomic seat locking  │  │  Collections: User, Theatre,       │
+│    (SET NX, 10-min TTL) │  │    Screen, Movie, Booking,         │
+│  • BullMQ job queue for │  │    SeatMap, FoodItem, Payment      │
+│    async booking        │  │                                    │
+│    processing           │  │  • SeatMap: per movie + screen     │
+│  • Auto-reconnect with  │  │    + date + time (unique index)    │
+│    graceful fallback    │  │  • Booking: refs User, Movie,      │
+│                         │  │    Theatre, Screen, FoodItem       │
+└─────────────────────────┘  └────────────────────────────────────┘
 ```
 
 ---
@@ -200,13 +207,15 @@ MarkMySeat/
 │   ├── vite.config.ts
 │   └── tsconfig.json
 │
-├── server/                          # Node.js + Express backend
-│   ├── server.js                    # Express app setup + route mounting
+├── server/                          # Node.js + Express backend (MVC pattern)
+│   ├── server.js                    # Express app setup, route mounting, Redis + BullMQ init
 │   ├── config/
 │   │   ├── db.js                    # MongoDB connection helper
-│   │   └── razorpay.js              # Razorpay instance config
+│   │   ├── razorpay.js              # Razorpay instance config
+│   │   └── redis.js                 # Redis (ioredis) connection with auto-reconnect
 │   ├── middleware/
 │   │   ├── authMiddleware.js        # JWT verification (user)
+│   │   ├── theatreMiddleware.js     # JWT verification (theatre owner)
 │   │   └── adminMiddleware.js       # JWT verification (admin role)
 │   ├── models/
 │   │   ├── User.js                  # name, email, password, role, isActive
@@ -217,22 +226,30 @@ MarkMySeat/
 │   │   ├── SeatMap.js               # per movie+screen+date+time seat availability map
 │   │   ├── FoodItem.js              # name, price, category, veg, theatre ref
 │   │   └── Payment.js               # Razorpay order/payment IDs, amount, signature
-│   ├── controllers/
-│   │   ├── authController.js        # Register, login, profile
-│   │   ├── bookingController.js     # Create, list, cancel, verify bookings
-│   │   └── paymentController.js     # Razorpay order + verification
-│   ├── routes/
+│   ├── controllers/                 # Business logic (separated from routes)
+│   │   ├── authController.js        # Register, login, profile, change password
+│   │   ├── adminController.js       # SuperAdmin: stats, user/theatre/booking/movie CRUD
+│   │   ├── bookingController.js     # Create, list, cancel, verify + seat locking + BullMQ worker
+│   │   ├── movieController.js       # Movie listing, city filter, theatre lookup
+│   │   ├── paymentController.js     # Razorpay order creation + HMAC signature verification
+│   │   ├── theatreAuthController.js # Theatre register, login, profile, seat config
+│   │   ├── theatreController.js     # Screens, movies, bookings, stats for theatre dashboard
+│   │   └── foodController.js        # Food menu CRUD (global + per-theatre)
+│   ├── routes/                      # Thin route definitions (maps URLs → controllers)
 │   │   ├── auth.js                  # User auth routes
-│   │   ├── bookingRoutes.js         # Booking CRUD routes
-│   │   ├── movieRoutes.js           # Movie listing + CRUD
+│   │   ├── bookingRoutes.js         # Booking CRUD + seat lock routes
+│   │   ├── movieRoutes.js           # Public movie listing routes
 │   │   ├── paymentRoutes.js         # Payment routes
-│   │   ├── theatreAuth.js           # Theatre register/login
-│   │   ├── theatreRoutes.js         # Theatre dashboard API
+│   │   ├── theatreAuth.js           # Theatre register/login routes
+│   │   ├── theatreRoutes.js         # Theatre dashboard API routes
 │   │   ├── foodRoutes.js            # Food menu routes
-│   │   ├── showRoutes.js            # Show management
-│   │   └── adminRoutes.js           # SuperAdmin API (stats, CRUD)
+│   │   └── adminRoutes.js           # SuperAdmin API routes
+│   ├── services/                    # Background services & concurrency
+│   │   ├── seatLock.js              # Redis-based atomic seat locking (SET NX, 10-min TTL)
+│   │   └── bookingQueue.js          # BullMQ queue + worker for async booking processing
 │   └── seed/
 │       ├── seed.js                  # Comprehensive test data seeder
+│       ├── food.js                  # Food items seeder
 │       └── movie.js                 # Legacy movie seeder
 │
 └── docs/                            # Architecture diagrams
@@ -246,16 +263,27 @@ MarkMySeat/
 
 ```
 User browses movies → Selects movie → Picks date & showtime
-    → Interactive seat map loads (real-time availability from SeatMap collection)
+    → Interactive seat map loads (real-time availability from SeatMap)
     → Selects seats (color-coded by category with pricing)
+    → Backend locks seats in Redis (SET NX, 10-min TTL) to prevent double-booking
     → Proceeds to confirm → Adds food/beverages (optional)
     → Price breakdown shown (seats + food + total)
     → Initiates Razorpay payment
     → Backend creates Razorpay order → Frontend opens checkout modal
     → On payment success → Backend verifies signature (HMAC SHA256)
-    → Seats marked as booked in SeatMap → Booking record created
-    → Payment record saved → Success page with confetti + QR e-ticket
+    → Redis locks verified → Seats marked as booked in SeatMap (MongoDB transaction)
+    → Booking + Payment records saved → BullMQ job enqueued if queue is available
+    → Success page with confetti + QR e-ticket
 ```
+
+### Seat Locking (Redis)
+
+To prevent two users from booking the same seat simultaneously, the platform uses **Redis-based atomic seat locking**:
+
+1. **Lock** — When a user selects seats, the backend calls `SET seat:{showKey}:{seatId} userId NX EX 600` (atomic, 10-minute expiry)
+2. **Verify** — Before confirming a booking, the backend verifies all locks still belong to the requesting user
+3. **Release** — Locks auto-expire after 10 minutes, or are released manually if the user navigates away
+4. **Fallback** — If Redis is unavailable, the system falls back to MongoDB-only seat tracking (no locking, first-write-wins)
 
 ### Authentication Architecture
 
@@ -369,6 +397,7 @@ Razorpay is integrated end-to-end:
 - **Password Hashing** — bcryptjs with 10 salt rounds
 - **JWT Authentication** — Stateless tokens with role-based payloads (`{ id, role }`)
 - **Payment Verification** — Server-side HMAC SHA256 signature validation
+- **Atomic Seat Locking** — Redis SET NX prevents double-booking race conditions
 - **CORS Protection** — Whitelist-only origin policy
 - **Admin Self-Protection** — Admins cannot disable or delete their own account
 - **User Account Control** — Disabled users receive `403 Forbidden` on login attempts
