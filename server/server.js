@@ -28,7 +28,8 @@ const allowedOrigins = [
   "https://markmyseat.netlify.app",
   "http://localhost:3000",
   "http://localhost:3001",
-  "http://localhost:5173"
+  "http://localhost:5173",
+  "http://markmyseat-frontend-603688552491-ap-south-1-an.s3-website.ap-south-1.amazonaws.com"
 ];
 
 app.use(
